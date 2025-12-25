@@ -1,15 +1,21 @@
-# MarketAgent - AI-Powered Market Intelligence
+# MarketAgent - AI-Powered Market Intelligence with Telegram
 
-An automated market analysis system that fetches real-time data from Finnhub, curates the most valuable insights, and uses OpenAI's ChatGPT to generate professional, easy-to-read market reports.
+An automated market analysis system that fetches real-time data from Finnhub, curates the most valuable insights, uses OpenAI's GPT-4o to generate professional market reports, and delivers them to Telegram in real-time.
 
 ## 🚀 Features
 
-- 📊 **Comprehensive Data Collection**: Fetches quotes, news, company profiles, financials (P/E ratios, 52-week ranges, beta, market cap) from Finnhub API
+- 📊 **Real-Time Data Collection**: Fetches quotes, today's news (10 per stock), market news, company profiles, and financials from Finnhub API
 - 🤖 **AI-Powered Analysis**: Uses OpenAI's GPT-4o to generate insightful, narrative market reports with actionable context
-- 📰 **News Integration**: Correlates price moves with recent news catalysts and company-specific events
-- 🎯 **Smart Data Curation**: Intelligently selects and formats the most valuable data points for AI analysis
-- ⏰ **Market Session Detection**: Automatically identifies pre-market, regular hours, after-hours, and closed sessions
-- 📈 **Top Movers Analysis**: Identifies biggest gainers, losers, and most volatile stocks with context
+- 📰 **Intelligent News Curation**: 
+  - Today's company-specific news (10 most recent per stock)
+  - General market news filtered for relevance (last 24h)
+  - Excludes lifestyle/non-market content automatically
+- 📱 **Telegram Integration**: Auto-sends reports to Telegram group with dedicated topics:
+  - Daily Reports topic: Stock summary + AI analysis (split into 2 messages to avoid truncation)
+  - Market News topic: Formatted news with sources and links
+- 🎯 **Smart Data Curation**: Per-stock briefings with price changes and relevant news
+- ⏰ **Market Session Detection**: Automatically identifies market status
+- 💾 **Full Pipeline Automation**: Single command runs entire workflow (fetch → analyze → send)
 
 ## 📦 Setup
 
@@ -25,55 +31,106 @@ pip install -r requirements.txt
 - `finnhub-python` - Finnhub API client
 - `python-dotenv` - Environment variable management
 - `openai` - OpenAI API client for GPT-4o
+- `requests` - HTTP library for Telegram Bot API
 
 ### 2. Configure API Keys
 
 Create a `.env` file in the project root (same level as `README.md`):
 
 ```env
+# Finnhub API
 FINNHUB_API_KEY=your_finnhub_api_key_here
+
+# OpenAI API
 OPENAI_API_KEY=your_openai_api_key_here
+
+# Telegram Bot Configuration
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+TELEGRAM_CHAT_ID=your_telegram_group_chat_id_here
+TELEGRAM_TOPIC_DAILY_REPORTS=2
+TELEGRAM_TOPIC_MARKET_NEWS=4
 ```
 
 **Get your API keys:**
-- **Finnhub**: Sign up at https://finnhub.io/register (free tier available)
+- **Finnhub**: Sign up at https://finnhub.io/register (free tier: 60 calls/minute)
 - **OpenAI**: Get your key at https://platform.openai.com/api-keys
+- **Telegram Bot**:
+  1. Message [@BotFather](https://t.me/botfather) on Telegram
+  2. Create a new bot with `/newbot`
+  3. Copy the token provided
+  4. Add bot to your Telegram group
+  5. Get chat ID by sending a message and checking updates via `https://api.telegram.org/bot<TOKEN>/getUpdates`
+  6. Topic IDs are visible in Telegram group settings
 
 ⚠️ **Important**: The `.env` file is gitignored and should never be committed to version control.
 
 ### 3. Configure Stock Symbols
 
-Edit the `SYMBOLS` list in `finnhub_scripts/fetch_and_store.py`:
+Edit the `SYMBOLS` list in [finnhub_scripts/fetch_and_store.py](finnhub_scripts/fetch_and_store.py):
 
 ```python
 SYMBOLS = ["TSLA", "AMD", "TTWO", "GOOG", "NVDA", "MSTR"]
 ```
 
+### 4. Create Telegram Group with Topics
+
+1. Create a Telegram group (supergroup)
+2. Enable Topics in group settings
+3. Create two topics:
+   - **Daily Reports** (get topic ID, set as `TELEGRAM_TOPIC_DAILY_REPORTS`)
+   - **Market News** (get topic ID, set as `TELEGRAM_TOPIC_MARKET_NEWS`)
+4. Add your bot to the group as admin
+
 ## 🎯 Usage
 
-### Quick Start (Full Pipeline)
+### Quick Start (Full Automated Pipeline)
 
-Run both data collection and AI report generation:
+Run the complete workflow in one command:
 
 ```powershell
-python -m finnhub_scripts.fetch_and_store; python -m engine.run_ai_report
+python run_full_pipeline.py
 ```
 
-### Step-by-Step
+**What it does (sequentially):**
+1. ✅ **Step 1**: Fetches latest market data from Finnhub
+2. ✅ **Step 2**: Generates AI analysis report with OpenAI
+3. ✅ **Step 3**: Sends formatted reports to Telegram
+
+**Output example:**
+```
+============================================================
+📊 MARKETAGENT FULL PIPELINE
+============================================================
+
+🚀 STEP: 1/3 - Fetch Market Data
+✅ Market snapshot saved with 50 news items + 18 market news items
+
+🚀 STEP: 2/3 - Generate AI Report
+✅ AI report generated successfully
+
+🚀 STEP: 3/3 - Send Telegram Reports
+📤 Message 1/2 posted to Daily Reports ✅
+📤 Message 2/2 posted to Daily Reports ✅
+📤 Market News posted ✅
+```
+
+### Step-by-Step Manual Execution
 
 #### Step 1: Fetch Market Data
 
 Collect comprehensive market data from Finnhub:
 
 ```powershell
-python -m finnhub_scripts.fetch_and_store
+python finnhub_scripts/fetch_and_store.py
 ```
 
 **What it does:**
 - Fetches real-time quotes for configured symbols
 - Retrieves company profiles (name, industry, market cap)
 - Collects key financials (P/E ratio, 52-week ranges, beta)
-- Gets last 7 days of company news (top 5 per stock)
+- Gets **today's company news (10 most recent per stock)**
+- Fetches **general market news from last 24 hours**
+- Filters market news for relevance (excludes lifestyle, personal finance)
 - Detects current market session
 - Saves snapshot to `data/snapshots/market_snapshot-<timestamp>.json`
 
@@ -83,9 +140,10 @@ python -m finnhub_scripts.fetch_and_store
   → Fetching TSLA...
   → Fetching AMD...
   ...
-✅ Market snapshot saved to data/snapshots/market_snapshot-20251223-012224.json
+✅ Market snapshot saved to data/snapshots/market_snapshot-20251225-120000.json
    Stocks: 6
-   News items: 30
+   News items: 50 (10 per stock)
+   Market news items (24h): 18
 ```
 
 #### Step 2: Generate AI Report
@@ -98,7 +156,7 @@ python -m engine.run_ai_report
 
 **What it does:**
 - Loads the latest market snapshot
-- Curates data (identifies top movers, organizes news by stock)
+- Curates data (organizes news by stock)
 - Formats data into AI-friendly structure
 - Sends to OpenAI GPT-4o with professional analyst prompt
 - Generates comprehensive narrative report
@@ -106,20 +164,47 @@ python -m engine.run_ai_report
 
 **Output example:**
 ```
-============================================================
 🎯 AI Market Report Generator
-============================================================
 
 📂 Loading latest market snapshot...
-   Loaded: market_snapshot-20251223-012224.json
+   Loaded: market_snapshot-20251225-120000.json
 🤖 Curating data for AI analysis...
 📝 Formatting data for ChatGPT prompt...
 🚀 Sending to ChatGPT (GPT-4o)...
 
 ✅ AI report generated successfully!
-   📄 Saved to: reports/ai_report-20251223-012224.txt
-   📊 Report length: 3847 characters
+   📄 Saved to: reports/ai_report-20251225-120000.txt
 ```
+
+#### Step 3: Send Reports to Telegram
+
+Send formatted reports to Telegram topics:
+
+```powershell
+python -m engine.send_telegram_report
+```
+
+**What it sends:**
+
+**Daily Reports Topic (2 messages):**
+1. **Message 1**: Stock summary with color indicators + first part of AI analysis
+   ```
+   Today's Stock Moves:
+   🟢 TSLA $485.40 | -0.03%
+   🟢 AMD $215.04 | +0.07%
+   🔴 NVDA $188.61 | -0.32%
+   
+   [Executive Summary, Notable Movers, Key News & Catalysts sections...]
+   ```
+
+2. **Message 2**: Market Insights + Risks + Opportunities sections
+
+**Market News Topic:**
+   ```
+   [12:30] Bloomberg: AI Chip Demand Surges (https://...)
+   [11:45] Reuters: Federal Reserve Signals Rate Cuts Ahead (https://...)
+   [10:15] CNBC: Tesla Beats Q3 Estimates (https://...)
+   ```
 
 ## 📁 Project Structure
 
@@ -127,213 +212,244 @@ python -m engine.run_ai_report
 MarketAgent/
 ├── finnhub_scripts/
 │   ├── __init__.py
-│   └── fetch_and_store.py           # Comprehensive Finnhub data fetcher
-│                                     # - Fetches quotes, profiles, financials, news
-│                                     # - Error handling per symbol
-│                                     # - Market session detection
+│   └── fetch_and_store.py           # Finnhub data fetcher
+│                                     # - Fetches quotes, profiles, financials
+│                                     # - Today's news (10 per stock)
+│                                     # - Market news (24h, filtered)
 ├── engine/
 │   ├── __init__.py
-│   ├── data_curator.py               # Smart data curation for AI
-│   │                                 # - Identifies top movers/gainers/losers
-│   │                                 # - Groups news by stock
-│   │                                 # - Formats data for LLM consumption
+│   ├── data_curator.py               # Data curation for AI
+│   │                                 # - Per-stock briefings
+│   │                                 # - News organization
 │   ├── prompts.py                    # AI system prompts
-│   │                                 # - Guides ChatGPT report structure
-│   │                                 # - Defines tone and content guidelines
+│   │                                 # - Report structure guidelines
+│   │                                 # - Tone and content rules
 │   ├── report_engine.py              # Report utilities
-│   │                                 # - Loads latest snapshots
-│   │                                 # - Analysis helpers
-│   └── run_ai_report.py              # Main AI report generator
-│                                     # - OpenAI API integration
-│                                     # - End-to-end report pipeline
+│   │                                 # - Latest snapshot loader
+│   ├── run_ai_report.py              # AI report generator
+│   │                                 # - OpenAI GPT-4o integration
+│   ├── telegram_sender.py            # Telegram bot API client
+│   │                                 # - Message posting to topics
+│   ├── telegram_formatter.py         # Telegram output formatting
+│   │                                 # - Stock summary with emojis
+│   │                                 # - AI report splitting (2 parts)
+│   │                                 # - Market news with links
+│   └── send_telegram_report.py       # Telegram orchestrator
+│                                     # - Loads snapshot + AI report
+│                                     # - Formats and sends all messages
 ├── contracts/
 │   ├── __init__.py
-│   ├── market_report.py              # Data contracts (optional)
+│   ├── market_report.py              # Data contracts
 │   └── market_snapshot.py
 ├── data/
-│   └── snapshots/                    # Market snapshots (JSON format)
-│       └── market_snapshot-*.json    # Timestamped data files
-├── reports/                          # Generated AI reports
-│   └── ai_report-*.txt               # Timestamped narrative reports
+│   └── snapshots/                    # Market snapshots (JSON)
+│       └── market_snapshot-*.json
+├── reports/                          # AI-generated reports
+│   └── ai_report-*.txt
 ├── tests/
-│   └── test_mock_run.py              # Test with mock data
-├── .env                              # API keys (gitignored, create this!)
+│   └── test_mock_run.py              # Test utilities
+├── .env                              # API keys (gitignored - create this!)
 ├── .gitignore
-├── requirements.txt                  # Python dependencies
-└── README.md                         # This file
+├── requirements.txt
+├── run_full_pipeline.py              # Complete automation script
+├── test_send_ai_report.py            # Test Telegram sender
+└── README.md
 ```
 
-## 📊 Example AI Report Output
+## 📊 Example Output
 
-The AI generates professional, narrative market reports with structured sections:
+### Generated AI Report Structure
 
-### Report Structure:
-- **📊 Executive Summary** - High-level overview of market sentiment and key themes (2-3 sentences)
-- **🔥 Notable Movers** - Detailed analysis of top gainers and losers with explanations tied to news catalysts
-- **📰 Key News & Catalysts** - Summary of important news driving market moves, grouped by theme
-- **💡 Market Insights** - Broader patterns, sector trends, and technical observations
-- **⚠️ Risks to Watch** - Potential disruptors and concerns investors should monitor
-- **✅ Opportunities** - Areas showing value, momentum, or interesting setups
+The AI creates professional narrative reports with these sections:
 
-### Real Example (Generated December 23, 2025):
+- **📊 Executive Summary** - Market overview and key themes
+- **🔥 Notable Movers** - Stock analysis with explanations
+- **📰 Key News & Catalysts** - Important news grouped by theme
+- **💡 Market Insights** - Patterns and sector trends
+- **⚠️ Risks to Watch** - Potential disruptions
+- **✅ Opportunities** - Bullish setups and value areas
+
+### Example Report (December 24, 2025)
 
 ```
 📊 Executive Summary
-The market closed on a positive note today, with a generally upbeat sentiment 
-driven by gains in key technology stocks. Tesla (TSLA) and NVIDIA (NVDA) were 
-among the top gainers, benefiting from positive market conditions and news of 
-strategic advancements.
+
+The market closed with a mixed sentiment today, as investors navigated 
+through a blend of sector-specific performances and broader economic 
+indicators. While the S&P 500 is nearing record highs, individual 
+stocks displayed varied performances.
 
 🔥 Notable Movers
-- Tesla Inc (TSLA): Rose by 1.56% to $488.73. Tesla's stock was buoyed by 
-  optimism following recent news of being in a buy zone, driven by advancements 
-  in its robotaxi technology and favorable court rulings regarding CEO Elon 
-  Musk's compensation package.
 
-- NVIDIA Corp (NVDA): Increased by 1.49% to $183.69. NVIDIA's rebound is 
-  linked to its strategic positioning in the AI sector despite recent 
-  discussions around a potential AI bubble burst.
+Tesla: Closed at $485.40, down 0.03%. The decline comes amid 
+mixed sentiment surrounding valuation and margin pressures.
+
+NVIDIA: Fell by 0.32% to $188.61. The decline reflects market 
+assessment of trade tensions and increased competition in AI chips.
 ```
 
-[Full example report available at: reports/ai_report-20251223-012224.txt]
+[See full examples in the `reports/` directory]
 
-## ⚙️ Customization
+## 📝 Customization
 
 ### Change Stock Symbols
 
-Edit the `SYMBOLS` list in `finnhub_scripts/fetch_and_store.py`:
+Edit [finnhub_scripts/fetch_and_store.py](finnhub_scripts/fetch_and_store.py):
 
 ```python
-SYMBOLS = ["TSLA", "AMD", "TTWO", "GOOG", "NVDA", "MSTR"]  # Add/remove as needed
+SYMBOLS = ["TSLA", "AMD", "TTWO", "GOOG", "NVDA", "MSTR"]
 ```
 
-### Change AI Model
+### Change News Fetching Parameters
 
-Edit `engine/run_ai_report.py` to use different OpenAI models:
+In [finnhub_scripts/fetch_and_store.py](finnhub_scripts/fetch_and_store.py):
 
 ```python
-model="gpt-4o"           # Best quality, higher cost
-# model="gpt-4-turbo"    # Good balance
-# model="gpt-3.5-turbo"  # Faster, cheaper
+# Fetch today's news (days=1), 10 items per stock
+fetch_news(symbol, days=1, limit=10)
+
+# Fetch market news from last 24 hours
+fetch_market_news(hours=24)
 ```
 
-### Modify Report Style and Tone
+### Customize Market News Filtering
 
-Edit the `SYSTEM_PROMPT` in `engine/prompts.py` to:
-- Change report structure and sections
-- Adjust writing tone (formal/casual, bullish/neutral)
-- Add/remove specific analysis angles
-- Modify content guidelines
-
-### Add More Data Points
-
-**In `finnhub_scripts/fetch_and_store.py`:**
-- Add more Finnhub API calls (e.g., `recommendation_trends`, `price_target`, `earnings`)
-- Reference: https://finnhub.io/docs/api
-
-**In `engine/data_curator.py`:**
-- Update `curate_for_ai()` to process new data
-- Modify `format_for_prompt()` to include in AI input
-
-### Adjust News Lookback Period
-
-In `finnhub_scripts/fetch_and_store.py`, modify the `fetch_news()` function:
+In [finnhub_scripts/fetch_and_store.py](finnhub_scripts/fetch_and_store.py), edit `_is_relevant_market_news()`:
 
 ```python
-def fetch_news(symbol, days=7):  # Change days parameter (default: 7)
-    # ... rest of function
+POSITIVE_KEYWORDS = ["gdp", "cpi", "fed", "earnings", "ai", "crypto"]
+NEGATIVE_KEYWORDS = ["lifestyle", "career advice", "ice cream"]
 ```
 
-## 📝 Important Notes
+### Change AI Model or Style
 
-### API Costs and Rate Limits
+Edit [engine/run_ai_report.py](engine/run_ai_report.py):
 
-- **Finnhub Free Tier**: 
-  - 60 API calls/minute
-  - Consider adding delays between requests if fetching many symbols
-  - Upgrade for higher limits: https://finnhub.io/pricing
+```python
+model="gpt-4o"           # Best quality (default)
+# model="gpt-4-turbo"    # Good balance, lower cost
+# model="gpt-3.5-turbo"  # Fastest, cheapest
+```
 
-- **OpenAI API Costs**: 
-  - GPT-4o: ~$2.50/$10 per 1M input/output tokens
-  - GPT-4-turbo: ~$10/$30 per 1M tokens
-  - GPT-3.5-turbo: ~$0.50/$1.50 per 1M tokens
-  - Monitor usage: https://platform.openai.com/usage
-  - Each report costs approximately $0.01-0.05 depending on model and data size
+Edit [engine/prompts.py](engine/prompts.py) to modify:
+- Report structure and sections
+- Writing tone (formal/casual)
+- Analysis angles and focus areas
+- Content guidelines
 
-### Market Hours Detection
+### Adjust Telegram Message Formatting
 
-The system automatically detects market sessions based on time:
-- **Pre-market**: 4:00 AM - 9:30 AM ET
-- **Regular hours**: 9:30 AM - 4:00 PM ET
-- **After-hours**: 4:00 PM - 8:00 PM ET
-- **Closed**: All other times
+Edit [engine/telegram_formatter.py](engine/telegram_formatter.py):
 
-*Note: Uses local system time; adjust logic in `fetch_and_store.py` if needed*
+```python
+# Stock summary emoji: 🟢 (gain), 🔴 (loss), ⚪ (neutral)
+# Market news format: [HH:MM] Source: Headline(link)
+# Modify colors, emoji, or text formatting as needed
+```
 
-### Data Storage
+### Add Custom Finnhub Data
 
-- Snapshots are stored indefinitely in `data/snapshots/`
-- Reports are stored indefinitely in `reports/`
-- Consider archiving old files periodically to save space
+In [finnhub_scripts/fetch_and_store.py](finnhub_scripts/fetch_and_store.py):
+1. Add new Finnhub API calls (see https://finnhub.io/docs/api)
+2. Update [engine/data_curator.py](engine/data_curator.py) to process new data
+3. Modify AI prompt in [engine/prompts.py](engine/prompts.py) if needed
 
-### Error Handling
+## ⚙️ Scheduling (Automation)
 
-- Each stock fetch is error-handled independently
-- If one stock fails, others continue processing
-- Check console output for warnings: `⚠️ Error fetching...`
+### Windows Task Scheduler
+
+Create a scheduled task to run the pipeline daily:
+
+```powershell
+# PowerShell as Administrator
+$TaskAction = New-ScheduledTaskAction -Execute "python" -Argument "C:\workspace\MarketAgent\run_full_pipeline.py" -WorkingDirectory "C:\workspace\MarketAgent"
+$TaskTrigger = New-ScheduledTaskTrigger -Daily -At 4:00PM
+Register-ScheduledTask -Action $TaskAction -Trigger $TaskTrigger -TaskName "MarketAgent" -Description "Daily AI market report"
+```
+
+### Linux/Mac Cron
+
+Add to crontab:
+
+```bash
+0 16 * * * cd /path/to/MarketAgent && python run_full_pipeline.py
+```
+
+This runs at 4:00 PM (16:00) daily.
+
+## 📈 API Costs & Rate Limits
+
+### Finnhub (Free Tier)
+- **60 API calls/minute** limit
+- Free tier includes: quotes, profiles, financials, news, general news
+- Consider upgrading for higher limits: https://finnhub.io/pricing
+
+### OpenAI API
+- **GPT-4o**: ~$2.50/$10 per 1M input/output tokens (~$0.02-0.05 per report)
+- **GPT-4-turbo**: ~$10/$30 per 1M tokens
+- **GPT-3.5-turbo**: ~$0.50/$1.50 per 1M tokens
+- Monitor usage: https://platform.openai.com/usage
+
+### Telegram Bot API
+- Completely free - no rate limits for bots
 
 ## 🐛 Troubleshooting
 
-**"FINNHUB_API_KEY not found"** or **"OPENAI_API_KEY not found"**
-- Ensure `.env` file exists in project root (same level as `README.md`)
-- Check `.env` has correct format: `KEY_NAME=value` (no spaces, no quotes)
-- Verify API keys are valid
+### "API key not found" errors
+- Check `.env` file exists in project root
+- Verify format: `KEY_NAME=value` (no spaces/quotes)
+- Confirm API keys are valid and not expired
 
-**"No module named 'engine'"**
-- Run scripts as modules: `python -m engine.run_ai_report` (not `python engine/run_ai_report.py`)
-- Ensure you're in the project root directory
+### "Chat not found" (Telegram)
+- Verify `TELEGRAM_CHAT_ID` is negative (e.g., `-1003634803551`)
+- Ensure bot is added to the group as admin
+- Check topic IDs match group's actual topics
 
-**"No market snapshot files found"**
-- Run `python -m finnhub_scripts.fetch_and_store` first
-- Check that `data/snapshots/` directory exists and contains JSON files
+### "No module named 'engine'"
+- Run as module: `python -m engine.run_ai_report`
+- Not as script: `python engine/run_ai_report.py`
 
-**API Rate Limit Exceeded**
+### "Message is too long" (Telegram)
+- Report is split into 2 messages automatically
+- If still failing, AI report may be extremely long
+- Reduce stock count or news items per stock
+
+### Rate limit errors
 - Add delays between Finnhub requests
-- Reduce number of symbols in `SYMBOLS` list
+- Reduce number of stocks in `SYMBOLS`
 - Upgrade Finnhub plan
 
 ## 🚀 Future Enhancements
 
-Potential improvements to consider:
-
-- **Telegram/Discord Integration**: Auto-send reports to messaging platforms
-- **Scheduled Automation**: Daily/hourly report generation with cron/Windows Task Scheduler
-- **Chart Generation**: Add matplotlib charts to visualize price movements
-- **Sentiment Analysis**: Analyze news sentiment using NLP
-- **Historical Comparison**: Compare today's moves to historical patterns
-- **Multi-timeframe Analysis**: Intraday + daily + weekly views
-- **Sector Analysis**: Group stocks by sector for broader insights
-- **Portfolio Integration**: Track specific portfolios vs market
-- **Email Delivery**: Send reports via email automatically
+- **Email Delivery**: Send reports via email
 - **Web Dashboard**: Flask/FastAPI frontend for viewing reports
+- **Chart Generation**: Add price/volume charts with matplotlib
+- **Sentiment Analysis**: NLP-based news sentiment scoring
+- **Historical Tracking**: Compare to previous days/weeks
+- **Sector Analysis**: Group analysis by industry
+- **Discord Integration**: Alternative messaging platform
+- **Portfolio Tracking**: Monitor specific holdings
+- **Advanced Alerts**: Price targets, volume spikes, volatility
+- **Multi-timeframe**: Intraday, daily, weekly analysis
 
 ## 🤝 Contributing
 
-Feel free to fork, modify, and enhance! Key areas for contribution:
-- Additional data sources (Alpha Vantage, Yahoo Finance)
-- Enhanced data visualization
+Contributions welcome! Areas for enhancement:
+- Additional data sources (Yahoo Finance, Alpha Vantage)
 - Alternative AI models (Claude, Gemini)
-- Better error handling and logging
-- Unit tests and CI/CD
+- Enhanced error handling and logging
+- Unit tests and CI/CD pipelines
 
 ## 📄 License
 
-MIT License - Feel free to use for personal or commercial projects.
+MIT License - Use freely for personal or commercial projects.
 
 ## ⚠️ Disclaimer
 
-This tool is for informational and educational purposes only. It does not provide financial advice. Always do your own research and consult with a qualified financial advisor before making investment decisions. Past performance does not guarantee future results.
+This tool is for **informational purposes only**. It does not provide financial advice. Always conduct your own research and consult a qualified financial advisor before making investment decisions. Past performance does not guarantee future results. Use at your own risk.
 
 ---
 
-**Built with ❤️ using Finnhub API and OpenAI GPT-4o**
+**Built with ❤️ using Finnhub API, OpenAI GPT-4o, and Telegram Bot API**
+
+*Last Updated: December 25, 2025*
