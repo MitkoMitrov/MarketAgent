@@ -13,7 +13,7 @@ def curate_for_ai(snapshot):
     stocks = snapshot.get("stocks", {})
     news = snapshot.get("news", [])
     
-    # Sort stocks by absolute percent change to identify biggest movers
+    # Build stock list with all relevant data
     stock_list = []
     for symbol, data in stocks.items():
         stock_list.append({
@@ -28,14 +28,6 @@ def curate_for_ai(snapshot):
             "52_week_low": data.get("52_week_low"),
             "beta": data.get("beta"),
         })
-    
-    # Sort by absolute change percent
-    stock_list.sort(key=lambda x: abs(x.get("change_percent", 0)), reverse=True)
-    
-    # Identify top gainers and losers
-    sorted_by_change = sorted(stock_list, key=lambda x: x.get("change_percent", 0), reverse=True)
-    top_gainers = sorted_by_change[:3]
-    top_losers = sorted_by_change[-3:]
     
     # Group news by stock
     news_by_stock = {}
@@ -54,9 +46,7 @@ def curate_for_ai(snapshot):
         "market_session": snapshot.get("market_session", "unknown"),
         "snapshot_time": snapshot.get("snapshot_time"),
         "total_stocks": len(stock_list),
-        "top_movers": stock_list[:5],  # Top 5 biggest absolute movers
-        "top_gainers": top_gainers,
-        "top_losers": top_losers,
+        "stocks": stock_list,
         "news_by_stock": news_by_stock,
     }
     
@@ -71,32 +61,21 @@ def format_for_prompt(curated_data):
     lines.append(f"📊 Market Session: {curated_data['market_session']}")
     lines.append(f"⏰ Snapshot Time: {curated_data['snapshot_time']}\n")
     
-    lines.append("🔥 TOP MOVERS (by absolute change):")
-    for stock in curated_data["top_movers"]:
-        lines.append(f"  • {stock['symbol']} ({stock['name']})")
-        lines.append(f"    Price: ${stock['price']:.2f} | Change: {stock['change_percent']:+.2f}%")
-        lines.append(f"    Industry: {stock['industry']} | Market Cap: ${stock['market_cap']:.1f}B")
-        if stock['pe_ratio']:
-            lines.append(f"    P/E Ratio: {stock['pe_ratio']:.2f}")
-        if stock['52_week_high'] and stock['52_week_low']:
-            lines.append(f"    52-Week Range: ${stock['52_week_low']:.2f} - ${stock['52_week_high']:.2f}")
-        lines.append("")
-    
-    lines.append("\n🔼 TOP GAINERS:")
-    for stock in curated_data["top_gainers"]:
-        lines.append(f"  • {stock['symbol']}: {stock['change_percent']:+.2f}% (${stock['price']:.2f})")
-    
-    lines.append("\n🔽 TOP LOSERS:")
-    for stock in curated_data["top_losers"]:
-        lines.append(f"  • {stock['symbol']}: {stock['change_percent']:+.2f}% (${stock['price']:.2f})")
-    
-    lines.append("\n📰 RECENT NEWS BY STOCK:")
-    for symbol, news_items in curated_data["news_by_stock"].items():
+    lines.append("� STOCK BRIEFING:")
+    for stock in curated_data["stocks"]:
+        symbol = stock["symbol"]
+        lines.append(f"\n{symbol} - {stock['name']}")
+        lines.append(f"  💰 Price: ${stock['price']:.2f} | Change: {stock['change_percent']:+.2f}%")
+        
+        # Add news briefing for this stock
+        news_items = curated_data.get("news_by_stock", {}).get(symbol, [])
         if news_items:
-            lines.append(f"\n{symbol}:")
-            for item in news_items[:3]:  # Limit to top 3 news per stock
-                lines.append(f"  • {item['headline']} ({item['source']})")
+            lines.append(f"  📰 Recent News:")
+            for item in news_items[:5]:  # Show up to 5 news items per stock
+                lines.append(f"    • {item['headline']} ({item['source']})")
                 if item['summary']:
-                    lines.append(f"    {item['summary'][:150]}...")
+                    lines.append(f"      {item['summary'][:150]}...")
+        else:
+            lines.append(f"  📰 No recent news")
     
     return "\n".join(lines)

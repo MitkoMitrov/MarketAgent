@@ -11,6 +11,7 @@ Writing Guidelines:
 - Write in clear, professional, conversational tone
 - Use section headers with emojis for readability
 - Reference specific stocks, percentages, and news events
+- When mentioning stocks, use ONLY the company name (e.g., "NVIDIA" not "NVIDIA (NVDA)")
 - Connect price moves to news catalysts when available
 - Be factual - don't speculate beyond what the data shows
 - Avoid financial advice - provide information and context only
@@ -18,10 +19,7 @@ Writing Guidelines:
 
 Report Structure:
 📊 Executive Summary
-- 2-3 sentence overview of market sentiment and key themes
-
-🔥 Notable Movers
-- Highlight top gainers and losers with context
+- 3-4 sentence overview of market sentiment and key themes
 - Explain WHY each stock moved (reference news if available)
 
 📰 Key News & Catalysts
