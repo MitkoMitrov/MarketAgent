@@ -49,6 +49,4 @@ jobs:
           TELEGRAM_TOPIC_COMPANY_INFO: ${{ secrets.TELEGRAM_TOPIC_COMPANY_INFO }}
           TELEGRAM_TOPIC_EARNINGS: ${{ secrets.TELEGRAM_TOPIC_EARNINGS }}
           MARKET_SESSION: ${{ env.MARKET_SESSION }}
-          # Only send earnings alerts on after-market run (22:30 UTC)
-          SEND_EARNINGS: ${{ github.event.schedule == '30 22 * * *' || github.event.inputs.market_session == 'after-market' }}
         run: python run_full_pipeline.py
