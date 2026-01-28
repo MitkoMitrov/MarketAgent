@@ -103,7 +103,7 @@ def format_market_news(snapshot, max_items=10):
         if timestamp:
             try:
                 dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                time_str = dt.strftime("%H:%M")
+                time_str = dt.strftime("%d/%m/%Y %H:%M")
             except Exception:
                 time_str = ""
 
@@ -115,5 +115,78 @@ def format_market_news(snapshot, max_items=10):
 
     lines.append("")
     lines.append(f"Total: {len(market_news)} market news items in last 24h")
+
+    return "\n".join(lines)
+
+
+def format_company_info(snapshot):
+    """
+    Format detailed company information for each stock.
+    Shows: price, change, high, low, PE ratio, 52-week high/low, volume, market cap, beta.
+    Returns: formatted message per company.
+    """
+    from datetime import datetime, timezone
+    
+    lines = []
+    
+    # Add current date and time at the beginning
+    current_time = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC")
+    lines.append(f"*Company Information & Metrics*")
+    lines.append(f"Updated: {current_time}")
+    lines.append("")
+
+    stocks = snapshot.get("stocks", {})
+    if not stocks:
+        return ""
+
+    for symbol, data in stocks.items():
+        name = data.get("name", symbol)
+        price = data.get("price", 0)
+        change = data.get("change", 0)
+        change_pct = data.get("change_percent", 0)
+        high = data.get("high", 0)
+        low = data.get("low", 0)
+        pe_ratio = data.get("pe_ratio")
+        week_52_high = data.get("52_week_high", 0)
+        week_52_low = data.get("52_week_low", 0)
+        volume = data.get("volume", 0)
+        market_cap = data.get("market_cap", 0)
+        beta = data.get("beta", 0)
+        industry = data.get("industry", "N/A")
+        
+        # Determine emoji based on change
+        if change_pct > 0:
+            emoji = "🟢"
+        elif change_pct < 0:
+            emoji = "🔴"
+        else:
+            emoji = "⚪"
+        
+        # Build company section
+        lines.append(f"*{symbol}*")
+        lines.append("")
+        
+        # Price info
+        lines.append(f"• *Price:* ${price:.2f} | Change: {change:+.2f} ({change_pct:+.2f}%)")
+        
+        # Today's range
+        lines.append(f"• *Today's Range:* ${low:.2f} - ${high:.2f}")
+        
+        # 52-week range
+        lines.append(f"• *52-Week Range:* ${week_52_low:.2f} - ${week_52_high:.2f}")
+        
+        # Trading metrics
+        lines.append(f"• *Volume:* {volume:.2f}M")
+        lines.append(f"• *Market Cap:* ${market_cap:.2f}B")
+        
+        # Valuation metrics
+        if pe_ratio:
+            lines.append(f"• *P/E Ratio:* {pe_ratio:.2f}")
+        else:
+            lines.append(f"• *P/E Ratio:* N/A")
+        
+        lines.append(f"• *Beta:* {beta:.2f}")
+        
+        lines.append("")
 
     return "\n".join(lines)

@@ -1,0 +1,35 @@
+name: Run MarketAgent Twice Daily
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 15 * * *"  # 15:30 UTC
+    - cron: "30 22 * * *"  # 22:30 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run full pipeline
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_TOPIC_DAILY_REPORTS: ${{ secrets.TELEGRAM_TOPIC_DAILY_REPORTS }}
+          TELEGRAM_TOPIC_MARKET_NEWS: ${{ secrets.TELEGRAM_TOPIC_MARKET_NEWS }}
+        run: python run_full_pipeline.py

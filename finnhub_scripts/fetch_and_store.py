@@ -18,7 +18,7 @@ if not FINNHUB_API_KEY:
 finnhub_client = finnhub.Client(api_key=FINNHUB_API_KEY)
 
 # Settings
-SYMBOLS = ["TSLA", "AMD", "TTWO", "GOOG", "NVDA", "MSTR"]
+SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI"]
 
 # Get project root and create data directory
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

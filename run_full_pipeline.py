@@ -8,6 +8,7 @@ Runs the complete end-to-end workflow:
 import sys
 import subprocess
 from pathlib import Path
+import os
 
 
 def run_step(step_name, command, description):
@@ -16,6 +17,11 @@ def run_step(step_name, command, description):
     print(f"🚀 STEP: {step_name}")
     print(f"   {description}")
     print("=" * 60)
+    
+    # Use the virtual environment Python if in a venv
+    python_exe = sys.executable
+    if command.startswith("python "):
+        command = command.replace("python ", f'"{python_exe}" ', 1)
     
     try:
         result = subprocess.run(
@@ -41,11 +47,12 @@ def main():
     print("  1. Fetch latest market data from Finnhub")
     print("  2. Generate AI market report with OpenAI")
     print("  3. Send reports to Telegram topics")
+    print("  4. Check and send earnings alerts")
     print("=" * 60)
     
     # Step 1: Fetch data
     if not run_step(
-        "1/3 - Fetch Market Data",
+        "1/4 - Fetch Market Data",
         "python finnhub_scripts/fetch_and_store.py",
         "Fetching quotes, news, and market data from Finnhub..."
     ):
@@ -54,7 +61,7 @@ def main():
     
     # Step 2: Generate AI report
     if not run_step(
-        "2/3 - Generate AI Report",
+        "2/4 - Generate AI Report",
         "python -m engine.run_ai_report",
         "Generating market analysis report with OpenAI GPT-4..."
     ):
@@ -63,12 +70,20 @@ def main():
     
     # Step 3: Send to Telegram
     if not run_step(
-        "3/3 - Send to Telegram",
+        "3/4 - Send to Telegram",
         "python -m engine.send_telegram_report",
         "Posting reports to Telegram group topics..."
     ):
         print("\n⚠️  Pipeline stopped due to Telegram send failure")
         sys.exit(1)
+    
+    # Step 4: Send earnings alerts
+    if not run_step(
+        "4/4 - Send Earnings Alerts",
+        "python -m engine.send_earnings_alert",
+        "Checking and sending upcoming earnings alerts..."
+    ):
+        print("\n⚠️  Pipeline step failed but continuing...")
     
     # Success
     print("\n" + "=" * 60)
@@ -77,6 +92,7 @@ def main():
     print("📊 Market data fetched")
     print("🤖 AI report generated")
     print("📢 Reports sent to Telegram")
+    print("📅 Earnings alerts sent (if any)")
     print("=" * 60)
 
 
