@@ -17,6 +17,7 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 TELEGRAM_TOPIC_DAILY_REPORTS = os.getenv("TELEGRAM_TOPIC_DAILY_REPORTS")
 TELEGRAM_TOPIC_MARKET_NEWS = os.getenv("TELEGRAM_TOPIC_MARKET_NEWS")
 TELEGRAM_TOPIC_COMPANY_INFO = os.getenv("TELEGRAM_TOPIC_COMPANY_INFO")
+MARKET_SESSION = os.getenv("MARKET_SESSION", "after-market")  # Default to after-market
 
 if not all([TELEGRAM_CHAT_ID, TELEGRAM_TOPIC_DAILY_REPORTS, TELEGRAM_TOPIC_MARKET_NEWS, TELEGRAM_TOPIC_COMPANY_INFO]):
     raise ValueError("Missing Telegram config: TELEGRAM_CHAT_ID, TELEGRAM_TOPIC_DAILY_REPORTS, TELEGRAM_TOPIC_MARKET_NEWS, TELEGRAM_TOPIC_COMPANY_INFO")
@@ -47,6 +48,9 @@ def send_telegram_report(snapshot_data):
     """
     print("📢 Sending Telegram report...")
     
+    # Get market session label
+    session_label = "📈 PRE-MARKET" if MARKET_SESSION == "pre-market" else "📉 AFTER-MARKET"
+    
     # Load latest AI report text (fallback to notice if missing)
     ai_report_text, ai_report_name = load_latest_ai_report()
 
@@ -56,8 +60,8 @@ def send_telegram_report(snapshot_data):
     # Format AI report - returns (part1, part2) tuple
     ai_report_part1, ai_report_part2 = format_daily_reports_from_ai(ai_report_text)
     
-    # Message 1: stock summary + first part of AI report
-    daily_report_msg1 = f"{stock_summary}\n\n{ai_report_part1}"
+    # Add market session label to first message
+    daily_report_msg1 = f"{session_label}\n\n{stock_summary}\n\n{ai_report_part1}"
     
     # Message 2: second part of AI report (includes Market Insights header)
     daily_report_msg2 = ai_report_part2
@@ -69,7 +73,7 @@ def send_telegram_report(snapshot_data):
     company_info_text = format_company_info(snapshot_data)
     
     # Send to Daily Reports topic (2 messages)
-    print(f"\n📤 Posting to Daily Reports (topic {TELEGRAM_TOPIC_DAILY_REPORTS})...")
+    print(f"\n📤 Posting to Daily Reports (topic {TELEGRAM_TOPIC_DAILY_REPORTS})... [{MARKET_SESSION.upper()}]")
     print("   Sending message 1/2...")
     result1 = send_message_to_topic(TELEGRAM_TOPIC_DAILY_REPORTS, daily_report_msg1, parse_mode=None)
     if result1:

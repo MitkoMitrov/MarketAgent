@@ -89,13 +89,14 @@ def get_upcoming_earnings(days_ahead=7):
     return upcoming
 
 
-def format_earnings_alert(upcoming_earnings, days_ahead=7):
+def format_earnings_alert(upcoming_earnings, days_ahead=7, market_session="pre-market"):
     """
     Format upcoming earnings for Telegram alert.
     
     Args:
         upcoming_earnings: List of upcoming earnings
         days_ahead: Number of days being checked
+        market_session: Either 'pre-market' or 'after-market'
     
     Returns:
         Formatted message string
@@ -105,10 +106,17 @@ def format_earnings_alert(upcoming_earnings, days_ahead=7):
     
     lines = []
     
-    # Header with current time
-    current_time = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC")
+    # Get session label
+    session_label = "📈 PRE-MARKET" if market_session == "pre-market" else "📉 AFTER-MARKET"
+    
+    # Header with current date and time
+    current_time = datetime.now(timezone.utc)
+    current_date = current_time.strftime("%d/%m/%Y")
+    current_time_str = current_time.strftime("%H:%M UTC")
+    
     lines.append(f"*📅 Upcoming Earnings Calls*")
-    lines.append(f"Next {days_ahead} days | Updated: {current_time}")
+    lines.append(f"{session_label} | {current_date} {current_time_str}")
+    lines.append(f"Next {days_ahead} days")
     lines.append("")
     
     for earning in upcoming_earnings:
