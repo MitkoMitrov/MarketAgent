@@ -28,8 +28,10 @@ wheels/
 *.egg
 
 # Data files
-data/
+data/snapshots/
+data/reports/
 *.json
+!data/earnings/earnings_2026.json
 market_snapshot*.json
 market_snapshot*.txt
 finnhub_data.json

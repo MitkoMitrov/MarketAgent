@@ -1,0 +1,229 @@
+{
+  "fetched_at": "2026-01-22T20:51:46.592712+00:00",
+  "year": 2026,
+  "symbols": [
+    "TSLA",
+    "AMD",
+    "QQQ",
+    "GOOG",
+    "NVDA",
+    "MSTR",
+    "SMCI"
+  ],
+  "earnings": {
+    "TSLA": {
+      "earningsCalendar": [
+        {
+          "date": "2026-07-21",
+          "epsActual": null,
+          "epsEstimate": 0.4558,
+          "hour": "amc",
+          "quarter": 2,
+          "revenueActual": null,
+          "revenueEstimate": 24915228196,
+          "symbol": "TSLA",
+          "year": 2026
+        },
+        {
+          "date": "2026-04-20",
+          "epsActual": null,
+          "epsEstimate": 0.404,
+          "hour": "amc",
+          "quarter": 1,
+          "revenueActual": null,
+          "revenueEstimate": 23629367338,
+          "symbol": "TSLA",
+          "year": 2026
+        },
+        {
+          "date": "2026-01-28",
+          "epsActual": null,
+          "epsEstimate": 0.4503,
+          "hour": "amc",
+          "quarter": 4,
+          "revenueActual": null,
+          "revenueEstimate": 25280904948,
+          "symbol": "TSLA",
+          "year": 2025
+        }
+      ]
+    },
+    "AMD": {
+      "earningsCalendar": [
+        {
+          "date": "2026-08-03",
+          "epsActual": null,
+          "epsEstimate": 1.3953,
+          "hour": "amc",
+          "quarter": 2,
+          "revenueActual": null,
+          "revenueEstimate": 10151455146,
+          "symbol": "AMD",
+          "year": 2026
+        },
+        {
+          "date": "2026-05-04",
+          "epsActual": null,
+          "epsEstimate": 1.2324,
+          "hour": "amc",
+          "quarter": 1,
+          "revenueActual": null,
+          "revenueEstimate": 9444171134,
+          "symbol": "AMD",
+          "year": 2026
+        },
+        {
+          "date": "2026-02-03",
+          "epsActual": null,
+          "epsEstimate": 1.3267,
+          "hour": "amc",
+          "quarter": 4,
+          "revenueActual": null,
+          "revenueEstimate": 9744523036,
+          "symbol": "AMD",
+          "year": 2025
+        }
+      ]
+    },
+    "QQQ": {
+      "earningsCalendar": []
+    },
+    "GOOG": {
+      "earningsCalendar": [
+        {
+          "date": "2026-07-21",
+          "epsActual": null,
+          "epsEstimate": 2.7695,
+          "hour": "amc",
+          "quarter": 2,
+          "revenueActual": null,
+          "revenueEstimate": 113350539597,
+          "symbol": "GOOGL",
+          "year": 2026
+        },
+        {
+          "date": "2026-04-22",
+          "epsActual": null,
+          "epsEstimate": 2.6123,
+          "hour": "amc",
+          "quarter": 1,
+          "revenueActual": null,
+          "revenueEstimate": 106698827983,
+          "symbol": "GOOGL",
+          "year": 2026
+        },
+        {
+          "date": "2026-02-04",
+          "epsActual": null,
+          "epsEstimate": 2.7058,
+          "hour": "amc",
+          "quarter": 4,
+          "revenueActual": null,
+          "revenueEstimate": 114564477192,
+          "symbol": "GOOGL",
+          "year": 2025
+        }
+      ]
+    },
+    "NVDA": {
+      "earningsCalendar": [
+        {
+          "date": "2026-05-26",
+          "epsActual": null,
+          "epsEstimate": 1.6997,
+          "hour": "amc",
+          "quarter": 1,
+          "revenueActual": null,
+          "revenueEstimate": 72838965142,
+          "symbol": "NVDA",
+          "year": 2027
+        },
+        {
+          "date": "2026-02-25",
+          "epsActual": null,
+          "epsEstimate": 1.5505,
+          "hour": "amc",
+          "quarter": 4,
+          "revenueActual": null,
+          "revenueEstimate": 66959341260,
+          "symbol": "NVDA",
+          "year": 2026
+        }
+      ]
+    },
+    "MSTR": {
+      "earningsCalendar": [
+        {
+          "date": "2026-07-29",
+          "epsActual": null,
+          "epsEstimate": 13.4558,
+          "hour": "",
+          "quarter": 2,
+          "revenueActual": null,
+          "revenueEstimate": 118690005,
+          "symbol": "MSTR",
+          "year": 2026
+        },
+        {
+          "date": "2026-04-29",
+          "epsActual": null,
+          "epsEstimate": 10.8291,
+          "hour": "",
+          "quarter": 1,
+          "revenueActual": null,
+          "revenueEstimate": 117840987,
+          "symbol": "MSTR",
+          "year": 2026
+        },
+        {
+          "date": "2026-02-05",
+          "epsActual": null,
+          "epsEstimate": 21.7616,
+          "hour": "amc",
+          "quarter": 4,
+          "revenueActual": null,
+          "revenueEstimate": 120847458,
+          "symbol": "MSTR",
+          "year": 2025
+        }
+      ]
+    },
+    "SMCI": {
+      "earningsCalendar": [
+        {
+          "date": "2026-08-03",
+          "epsActual": null,
+          "epsEstimate": 0.6663,
+          "hour": "amc",
+          "quarter": 4,
+          "revenueActual": null,
+          "revenueEstimate": 10872614652,
+          "symbol": "SMCI",
+          "year": 2026
+        },
+        {
+          "date": "2026-05-04",
+          "epsActual": null,
+          "epsEstimate": 0.5548,
+          "hour": "amc",
+          "quarter": 3,
+          "revenueActual": null,
+          "revenueEstimate": 10311479625,
+          "symbol": "SMCI",
+          "year": 2026
+        },
+        {
+          "date": "2026-02-03",
+          "epsActual": null,
+          "epsEstimate": 0.4964,
+          "hour": "amc",
+          "quarter": 2,
+          "revenueActual": null,
+          "revenueEstimate": 10420265368,
+          "symbol": "SMCI",
+          "year": 2026
+        }
+      ]
+    }
+  }
+}
