@@ -8,8 +8,8 @@ on:
         required: false
         default: 'after-market'
   schedule:
-    - cron: "30 2 * * *"   # 02:30 UTC = 03:30 Skopje (CET/Winter)
-    - cron: "30 9 * * *"   # 09:30 UTC = 10:30 Skopje (CET/Winter)
+    - cron: "30 14 * * *"  # 14:30 UTC = 15:30 Skopje (CET/Winter) - Pre-Market
+    - cron: "30 21 * * *"  # 21:30 UTC = 22:30 Skopje (CET/Winter) - After-Market
 
 permissions:
   contents: read
@@ -32,7 +32,7 @@ jobs:
       - name: Determine market session
         id: session
         run: |
-          if [ "${{ github.event.schedule }}" = "30 2 * * *" ] || [ "${{ github.event.inputs.market_session }}" = "pre-market" ]; then
+          if [ "${{ github.event.schedule }}" = "30 14 * * *" ] || [ "${{ github.event.inputs.market_session }}" = "pre-market" ]; then
             echo "MARKET_SESSION=pre-market" >> $GITHUB_ENV
           else
             echo "MARKET_SESSION=after-market" >> $GITHUB_ENV
