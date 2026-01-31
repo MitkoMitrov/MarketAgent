@@ -2,3 +2,4 @@ finnhub-python
 python-dotenv
 openai
 requests
+pandas_market_calendars

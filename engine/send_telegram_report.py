@@ -18,9 +18,14 @@ TELEGRAM_TOPIC_DAILY_REPORTS = os.getenv("TELEGRAM_TOPIC_DAILY_REPORTS")
 TELEGRAM_TOPIC_MARKET_NEWS = os.getenv("TELEGRAM_TOPIC_MARKET_NEWS")
 TELEGRAM_TOPIC_COMPANY_INFO = os.getenv("TELEGRAM_TOPIC_COMPANY_INFO")
 MARKET_SESSION = os.getenv("MARKET_SESSION", "after-market")  # Default to after-market for reports
+MARKET_NEWS_ONLY = os.getenv("MARKET_NEWS_ONLY", "0") == "1"
 
-if not all([TELEGRAM_CHAT_ID, TELEGRAM_TOPIC_DAILY_REPORTS, TELEGRAM_TOPIC_MARKET_NEWS, TELEGRAM_TOPIC_COMPANY_INFO]):
-    raise ValueError("Missing Telegram config: TELEGRAM_CHAT_ID, TELEGRAM_TOPIC_DAILY_REPORTS, TELEGRAM_TOPIC_MARKET_NEWS, TELEGRAM_TOPIC_COMPANY_INFO")
+if MARKET_NEWS_ONLY:
+    if not all([TELEGRAM_CHAT_ID, TELEGRAM_TOPIC_MARKET_NEWS]):
+        raise ValueError("Missing Telegram config: TELEGRAM_CHAT_ID, TELEGRAM_TOPIC_MARKET_NEWS")
+else:
+    if not all([TELEGRAM_CHAT_ID, TELEGRAM_TOPIC_DAILY_REPORTS, TELEGRAM_TOPIC_MARKET_NEWS, TELEGRAM_TOPIC_COMPANY_INFO]):
+        raise ValueError("Missing Telegram config: TELEGRAM_CHAT_ID, TELEGRAM_TOPIC_DAILY_REPORTS, TELEGRAM_TOPIC_MARKET_NEWS, TELEGRAM_TOPIC_COMPANY_INFO")
 
 
 # Helpers
@@ -47,6 +52,17 @@ def send_telegram_report(snapshot_data):
         snapshot_data (dict): Market snapshot dictionary (from load_latest_market_snapshot).
     """
     print("📢 Sending Telegram report...")
+
+    if MARKET_NEWS_ONLY:
+        market_news_text = format_market_news(snapshot_data, max_items=10)
+        print(f"\n📤 Posting to Market News (topic {TELEGRAM_TOPIC_MARKET_NEWS})... [MARKET NEWS ONLY]")
+        result = send_message_to_topic(TELEGRAM_TOPIC_MARKET_NEWS, market_news_text, parse_mode="Markdown")
+        if result:
+            print("   ✅ Posted successfully")
+        else:
+            print("   ❌ Failed to post")
+        print("\n" + "=" * 60)
+        return
     
     # Get market session label
     session_label = "📈 PRE-MARKET" if MARKET_SESSION == "pre-market" else "📉 AFTER-MARKET"
