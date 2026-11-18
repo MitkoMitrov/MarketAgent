@@ -4,19 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Market News</title>
-<meta name="description" content="Top market and watchlist news from the last 24 hours, with duplicate stories grouped together.">
+<meta name="description" content="Top market and watchlist news from the last 24 hours with duplicate stories grouped, plus the daily AI market report.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232563eb'/><path d='M7 22l6-7 5 4 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <style>
   :root {
     --bg: #f5f6f8;
     --surface: #ffffff;
-    --surface-2: #f0f2f5;
+    --surface-2: #eef0f3;
     --border: #e2e5ea;
     --text: #14171c;
     --text-2: #4b5563;
     --text-3: #6b7280;
     --accent: #2563eb;
     --accent-soft: #e8efff;
+    --up: #0f8a4f;
+    --down: #c8312b;
     --warn-bg: #fff7e0;
     --warn-text: #7a5300;
     --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .06);
@@ -24,44 +26,47 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0e1116;
-      --surface: #161a21;
-      --surface-2: #1d222b;
-      --border: #2a303b;
-      --text: #e8eaee;
-      --text-2: #b3b9c4;
-      --text-3: #8a92a0;
-      --accent: #6b9bff;
-      --accent-soft: #1b2a4a;
-      --warn-bg: #3a2e10;
-      --warn-text: #f3d48a;
-      --shadow: none;
+      --bg: #0e1116; --surface: #161a21; --surface-2: #1f242d; --border: #2a303b;
+      --text: #e8eaee; --text-2: #b3b9c4; --text-3: #8a92a0; --accent: #6b9bff;
+      --accent-soft: #1b2a4a; --up: #3ccf86; --down: #ff6b63;
+      --warn-bg: #3a2e10; --warn-text: #f3d48a; --shadow: none;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0e1116; --surface: #161a21; --surface-2: #1d222b; --border: #2a303b;
+    --bg: #0e1116; --surface: #161a21; --surface-2: #1f242d; --border: #2a303b;
     --text: #e8eaee; --text-2: #b3b9c4; --text-3: #8a92a0; --accent: #6b9bff;
-    --accent-soft: #1b2a4a; --warn-bg: #3a2e10; --warn-text: #f3d48a; --shadow: none;
+    --accent-soft: #1b2a4a; --up: #3ccf86; --down: #ff6b63;
+    --warn-bg: #3a2e10; --warn-text: #f3d48a; --shadow: none;
     color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
+    margin: 0; background: var(--bg); color: var(--text);
     font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   a { color: inherit; }
-  .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
+  button:focus-visible, select:focus-visible, .search:focus-visible, a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
 
-  header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; margin-bottom: 16px; }
+  /* Header + tabs */
+  header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-bottom: 18px; }
   h1 { font-size: 24px; line-height: 1.2; margin: 0; letter-spacing: -.01em; }
   .status { color: var(--text-3); font-size: 13px; margin-top: 4px; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
+  .tab {
+    border: 0; background: none; color: var(--text-3); font: inherit; font-weight: 600; font-size: 14.5px;
+    padding: 8px 12px; margin-bottom: -1px; border-bottom: 2px solid transparent; cursor: pointer;
+  }
+  .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
 
-  .controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 20px; }
+  /* Controls */
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 18px; }
   .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
   .seg button {
     border: 0; background: transparent; color: var(--text-2); font: inherit; font-size: 13px; font-weight: 500;
@@ -75,40 +80,45 @@
   }
   .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
   .search {
-    flex: 1 1 200px; max-width: 320px; min-width: 0;
-    border: 1px solid var(--border); background: var(--surface); color: var(--text);
-    font: inherit; font-size: 13.5px; padding: 6px 10px; border-radius: 8px;
+    flex: 1 1 200px; max-width: 300px; min-width: 0; border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); font: inherit; font-size: 13.5px; padding: 6px 10px; border-radius: 8px;
   }
-  button:focus-visible, .search:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
   .banner { background: var(--warn-bg); color: var(--warn-text); border-radius: 8px; padding: 8px 12px; font-size: 13.5px; margin-bottom: 16px; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 16px; align-items: start; }
+  /* News grid: 3 / 2 / 1 columns */
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  @media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px)  { .grid { grid-template-columns: minmax(0, 1fr); } }
 
   .card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 16px; box-shadow: var(--shadow); min-width: 0;
+    display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); min-width: 0;
   }
+  .thumb { aspect-ratio: 16 / 9; background: var(--surface-2); display: block; overflow: hidden; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb.placeholder {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 12px;
+    background: linear-gradient(135deg, var(--accent-soft), var(--surface-2));
+  }
+  .ph-tickers { color: var(--accent); font-weight: 750; font-size: 22px; letter-spacing: .03em; text-align: center; overflow-wrap: anywhere; }
+  .ph-source { color: var(--text-3); font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+  .card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; flex: 1; }
   .card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
   .tags { display: flex; flex-wrap: wrap; gap: 4px; }
-  .tag {
-    font-size: 11.5px; font-weight: 600; letter-spacing: .02em; padding: 1px 7px; border-radius: 5px;
-    background: var(--accent-soft); color: var(--accent);
-  }
+  .tag { font-size: 11.5px; font-weight: 600; letter-spacing: .02em; padding: 1px 7px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); }
   .tag.market { background: var(--surface-2); color: var(--text-2); }
   .count { font-size: 12px; color: var(--text-3); white-space: nowrap; }
   .count strong { color: var(--text); font-weight: 600; }
-
-  .card h2 { font-size: 16.5px; line-height: 1.35; margin: 0 0 6px; font-weight: 650; overflow-wrap: anywhere; }
+  .card h2 { font-size: 16px; line-height: 1.35; margin: 0 0 6px; font-weight: 650; overflow-wrap: anywhere; }
   .card h2 a { text-decoration: none; }
   .card h2 a:hover { text-decoration: underline; text-underline-offset: 2px; }
   .meta { font-size: 12.5px; color: var(--text-3); }
   .summary {
-    color: var(--text-2); font-size: 14px; margin: 8px 0 0;
-    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+    color: var(--text-2); font-size: 14px; margin: 8px 0 0; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   }
-
-  .similar { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .similar { margin-top: auto; padding-top: 12px; }
+  .similar-inner { border-top: 1px solid var(--border); padding-top: 10px; }
   .similar-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); margin-bottom: 6px; }
   .similar ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .similar li { font-size: 13.5px; line-height: 1.4; overflow-wrap: anywhere; }
@@ -119,8 +129,30 @@
   details.more summary::-webkit-details-marker { display: none; }
   details.more[open] summary { display: none; }
   details.more ul { margin-top: 8px; }
+  .empty { grid-column: 1 / -1; text-align: center; color: var(--text-3); padding: 48px 16px; }
 
-  .empty { text-align: center; color: var(--text-3); padding: 48px 16px; }
+  /* Daily report */
+  .report { max-width: 820px; }
+  .report-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 16px; margin-bottom: 14px; }
+  .report-head h2 { font-size: 19px; margin: 0; }
+  .report select {
+    font: inherit; font-size: 13.5px; color: var(--text); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px;
+  }
+  .moves { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .move { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+  .move b { font-weight: 650; margin-right: 6px; }
+  .up { color: var(--up); } .down { color: var(--down); }
+  .report-body { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; box-shadow: var(--shadow); }
+  .report-body h3 { font-size: 16.5px; margin: 22px 0 8px; }
+  .report-body h3:first-child { margin-top: 0; }
+  .report-body h4 { font-size: 14px; margin: 14px 0 6px; color: var(--text); }
+  .report-body p { margin: 0 0 10px; color: var(--text-2); }
+  .report-body ul { margin: 0 0 12px; padding-left: 20px; color: var(--text-2); }
+  .report-body li { margin-bottom: 4px; }
+  .report-body strong { color: var(--text); }
+  .disclaimer { font-size: 12px; color: var(--text-3); margin-top: 10px; }
+
   footer { color: var(--text-3); font-size: 12px; margin-top: 32px; text-align: center; }
 </style>
 </head>
@@ -133,17 +165,34 @@
     </div>
   </header>
 
-  <div class="controls">
-    <div class="seg" role="group" aria-label="Sort stories">
-      <button type="button" data-sort="top" aria-pressed="true">Top</button>
-      <button type="button" data-sort="latest" aria-pressed="false">Latest</button>
-    </div>
-    <div class="chips" id="chips" role="group" aria-label="Filter by ticker"></div>
-    <input class="search" id="search" type="search" placeholder="Search headlines" aria-label="Search headlines">
-  </div>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-news" data-tab="news" aria-selected="true" aria-controls="view-news">News</button>
+    <button class="tab" role="tab" id="tab-report" data-tab="report" aria-selected="false" aria-controls="view-report" hidden>Daily report</button>
+  </nav>
 
-  <div id="banner"></div>
-  <main class="grid" id="grid" aria-live="polite"></main>
+  <section id="view-news" role="tabpanel" aria-labelledby="tab-news">
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Sort stories">
+        <button type="button" data-sort="top" aria-pressed="true">Top</button>
+        <button type="button" data-sort="latest" aria-pressed="false">Latest</button>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="Filter by ticker"></div>
+      <input class="search" id="search" type="search" placeholder="Search headlines" aria-label="Search headlines">
+    </div>
+    <div id="banner"></div>
+    <main class="grid" id="grid" aria-live="polite"></main>
+  </section>
+
+  <section id="view-report" class="report" role="tabpanel" aria-labelledby="tab-report" hidden>
+    <div class="report-head">
+      <h2 id="report-title">Daily report</h2>
+      <select id="report-select" aria-label="Choose report"></select>
+    </div>
+    <div class="moves" id="moves"></div>
+    <article class="report-body" id="report-body"></article>
+    <p class="disclaimer">AI-generated summary of public market data and news. Not investment advice.</p>
+  </section>
+
   <footer id="footer"></footer>
 </div>
 
@@ -157,22 +206,25 @@
     get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   };
-
-  const state = { data: null, sort: store.get("mn.sort", "top"), filter: "all", query: "" };
+  const state = {
+    data: null, sort: store.get("mn.sort", "top"), filter: "all", query: "",
+    tab: location.hash === "#report" ? "report" : "news",
+    reports: [], reportId: null, reportCache: {},
+  };
   const $ = (id) => document.getElementById(id);
 
   function el(tag, attrs = {}, ...children) {
     const node = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
-      if (v == null) continue;
+      if (v == null || v === false) continue;
       if (k === "class") node.className = v;
-      else node.setAttribute(k, v);
+      else node.setAttribute(k, v === true ? "" : v);
     }
-    for (const c of children) if (c != null) node.append(c);
+    for (const c of children) if (c != null && c !== false) node.append(c);
     return node;
   }
-
   const safeUrl = (u) => (/^https?:\/\//i.test(u || "") ? u : null);
+  const httpsUrl = (u) => (/^https:\/\//i.test(u || "") ? u : null);
 
   function ago(ts) {
     const s = Math.max(0, Date.now() / 1000 - ts);
@@ -183,19 +235,29 @@
   }
   const fullTime = (ts) => new Date(ts * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
+  /* ---------- News ---------- */
   function link(item, cls) {
     const url = safeUrl(item.url);
     return url ? el("a", { href: url, target: "_blank", rel: "noopener noreferrer", class: cls }, item.headline)
                : el("span", { class: cls }, item.headline);
   }
-
   function metaLine(item) {
     return el("span", { class: "meta", title: item.timestamp ? fullTime(item.timestamp) : null },
       [item.source || "Unknown", item.timestamp ? ago(item.timestamp) : null].filter(Boolean).join(" · "));
   }
-
-  function similarItem(item) {
-    return el("li", {}, link(item), metaLine(item));
+  function placeholder(g) {
+    return el("div", { class: "thumb placeholder", "aria-hidden": "true" },
+      el("span", { class: "ph-tickers" }, g.symbols.length ? g.symbols.slice(0, 3).join(" · ") : "Market"),
+      el("span", { class: "ph-source" }, g.primary.source || "News"));
+  }
+  function thumb(g) {
+    const src = httpsUrl(g.image);
+    if (!src) return placeholder(g);
+    const img = el("img", { src, alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer" });
+    img.addEventListener("error", () => img.parentElement && img.parentElement.replaceWith(placeholder(g)), { once: true });
+    const url = safeUrl(g.primary.url);
+    return url ? el("a", { class: "thumb", href: url, target: "_blank", rel: "noopener noreferrer", tabindex: "-1", "aria-hidden": "true" }, img)
+               : el("div", { class: "thumb" }, img);
   }
 
   function card(g) {
@@ -203,49 +265,42 @@
     const tags = el("div", { class: "tags" });
     if (g.symbols.length) g.symbols.forEach((s) => tags.append(el("span", { class: "tag" }, s)));
     else tags.append(el("span", { class: "tag market" }, "Market"));
-
     const top = el("div", { class: "card-top" }, tags);
     if (g.size > 1) {
       const n = g.sources.length;
       top.append(el("span", { class: "count" }, el("strong", {}, String(g.size)), ` articles · ${n} source${n === 1 ? "" : "s"}`));
     }
 
-    const c = el("article", { class: "card" }, top, el("h2", {}, link(p)), metaLine(p));
-    if (p.summary) c.append(el("p", { class: "summary" }, p.summary));
+    const body = el("div", { class: "card-body" }, top, el("h2", {}, link(p)), metaLine(p));
+    if (p.summary) body.append(el("p", { class: "summary" }, p.summary));
 
     if (g.similar.length) {
-      const visible = g.similar.slice(0, SIMILAR_VISIBLE);
-      const hidden = g.similar.slice(SIMILAR_VISIBLE);
-      const box = el("div", { class: "similar" },
+      const item = (i) => el("li", {}, link(i), metaLine(i));
+      const inner = el("div", { class: "similar-inner" },
         el("div", { class: "similar-label" }, `Similar coverage (${g.similar.length})`),
-        el("ul", {}, ...visible.map(similarItem)));
+        el("ul", {}, ...g.similar.slice(0, SIMILAR_VISIBLE).map(item)));
+      const hidden = g.similar.slice(SIMILAR_VISIBLE);
       if (hidden.length) {
-        box.append(el("details", { class: "more" },
-          el("summary", {}, `Show ${hidden.length} more`),
-          el("ul", {}, ...hidden.map(similarItem))));
+        inner.append(el("details", { class: "more" }, el("summary", {}, `Show ${hidden.length} more`), el("ul", {}, ...hidden.map(item))));
       }
-      c.append(box);
+      body.append(el("div", { class: "similar" }, inner));
     }
-    return c;
+    return el("article", { class: "card" }, thumb(g), body);
   }
 
   function matches(g) {
     if (state.filter === "market" && !g.categories.includes("market")) return false;
     if (state.filter !== "all" && state.filter !== "market" && !g.symbols.includes(state.filter)) return false;
-    if (state.query) {
-      const q = state.query;
-      return [g.primary, ...g.similar].some((i) => i.headline.toLowerCase().includes(q) || (i.source || "").toLowerCase().includes(q));
-    }
-    return true;
+    if (!state.query) return true;
+    const q = state.query;
+    return [g.primary, ...g.similar].some((i) => i.headline.toLowerCase().includes(q) || (i.source || "").toLowerCase().includes(q));
   }
-
   function sorted(groups) {
     const arr = groups.slice();
     if (state.sort === "latest") arr.sort((a, b) => b.latest_ts - a.latest_ts);
     else arr.sort((a, b) => (b.size - a.size) || (b.symbols.length - a.symbols.length) || (b.latest_ts - a.latest_ts));
     return arr;
   }
-
   function renderChips() {
     const d = state.data;
     const hasMarket = d.groups.some((g) => g.categories.includes("market"));
@@ -253,44 +308,125 @@
     $("chips").replaceChildren(...options.map(([v, label]) =>
       el("button", { type: "button", class: "chip", "data-filter": v, "aria-pressed": String(state.filter === v) }, label)));
   }
-
   function renderStatus() {
     const d = state.data;
     if (!d) return;
     const gen = new Date(d.generated_at);
     const mins = (Date.now() - gen.getTime()) / 60000;
     const dupes = d.total_articles - d.total_groups;
-    $("status").textContent =
-      `Updated ${ago(gen.getTime() / 1000)} · ${d.total_groups} stories from ${d.total_articles} articles` +
+    $("status").textContent = `Updated ${ago(gen.getTime() / 1000)} · ${d.total_groups} stories from ${d.total_articles} articles` +
       (dupes > 0 ? ` · ${dupes} duplicates grouped` : "");
     $("status").title = gen.toLocaleString();
     $("banner").replaceChildren(mins > STALE_MIN
-      ? el("div", { class: "banner" }, `This feed hasn't refreshed for ${Math.round(mins)} minutes. The scheduled update may be delayed.`)
-      : "");
+      ? el("div", { class: "banner" }, `This feed hasn't refreshed for ${Math.round(mins)} minutes. The scheduled update may be delayed.`) : "");
   }
-
-  function render() {
+  function renderNews() {
     const d = state.data;
     if (!d) return;
     document.querySelectorAll("[data-sort]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.sort === state.sort)));
     document.querySelectorAll("[data-filter]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter)));
     const list = sorted(d.groups.filter(matches));
-    $("grid").replaceChildren(...(list.length ? list.map(card) : [el("div", { class: "empty" }, "No stories match this filter.")]));
+    $("grid").replaceChildren(...(list.length ? list.map(card)
+      : [el("div", { class: "empty" }, d.groups.length ? "No stories match this filter." : "No news in the last 24 hours.")]));
     $("footer").textContent = `Last ${d.window_hours}h · stories grouped when ≥ ${Math.round(d.threshold * 100)}% similar · data from Finnhub`;
     renderStatus();
   }
 
-  async function load() {
+  /* ---------- Daily report ---------- */
+  // Minimal, safe rendering of the AI text: headings, bullets, paragraphs, **bold**. No innerHTML.
+  function inline(text) {
+    const frag = document.createDocumentFragment();
+    text.split(/(\*\*[^*]+\*\*)/g).forEach((part) => {
+      if (/^\*\*[^*]+\*\*$/.test(part)) frag.append(el("strong", {}, part.slice(2, -2)));
+      else if (part) frag.append(part);
+    });
+    return frag;
+  }
+  const HEADING_EMOJI = /^(📊|📰|💡|⚠️|⚠|✅|📈|📉|🔍|🧭)/u;
+  function renderReportText(text) {
+    const out = [];
+    let list = null, para = [];
+    const flushPara = () => { if (para.length) { out.push(el("p", {}, inline(para.join(" ")))); para = []; } };
+    const flushList = () => { if (list) { out.push(list); list = null; } };
+    for (const raw of text.split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line) { flushPara(); flushList(); continue; }
+      // Section headings (emoji or #/##) → h3; sub-topics (###+ or a bold-only line) → h4.
+      const md = line.match(/^(#{1,6})\s+(.*)$/);
+      const boldOnly = line.match(/^\*\*([^*]+)\*\*:?$/);
+      const emojiHead = HEADING_EMOJI.test(line) && line.length < 70 && !/[.!?]$/.test(line);
+      if (md || boldOnly || emojiHead) {
+        flushPara(); flushList();
+        const text = (md ? md[2] : boldOnly ? boldOnly[1] : line).replace(/\*\*/g, "");
+        const level = emojiHead || (md && md[1].length <= 2) || (md && HEADING_EMOJI.test(text)) ? "h3" : "h4";
+        out.push(el(level, {}, inline(text)));
+        continue;
+      }
+      const bullet = line.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
+      if (bullet) { flushPara(); (list ||= el("ul")).append(el("li", {}, inline(bullet[1]))); continue; }
+      flushList(); para.push(line);
+    }
+    flushPara(); flushList();
+    return out;
+  }
+  function fmtDate(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  }
+  const sessionLabel = (s) => (s === "pre-market" ? "Pre-market" : s === "after-market" ? "After-market" : s);
+
+  async function showReport(id) {
+    const entry = state.reports.find((r) => r.id === id) || state.reports[0];
+    if (!entry) return;
+    state.reportId = entry.id;
+    $("report-select").value = entry.id;
+    try {
+      const rep = state.reportCache[entry.id] ||= await (await fetch(`${entry.file}?t=${Date.now()}`, { cache: "no-store" })).json();
+      if (state.reportId !== entry.id) return;
+      $("report-title").textContent = `${sessionLabel(rep.session)} report · ${fmtDate(rep.date)}`;
+      $("moves").replaceChildren(...(rep.stocks || []).map((s) => {
+        const pct = Number(s.change_percent) || 0;
+        return el("span", { class: "move" }, el("b", {}, s.symbol), `$${Number(s.price).toFixed(2)} `,
+          el("span", { class: pct > 0 ? "up" : pct < 0 ? "down" : "" }, `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`));
+      }));
+      $("report-body").replaceChildren(...renderReportText(rep.text || ""));
+    } catch (err) {
+      $("report-body").replaceChildren(el("p", {}, `Couldn't load this report (${err.message}).`));
+    }
+  }
+  async function loadReports() {
+    try {
+      const res = await fetch(`reports/index.json?t=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(res.status);
+      state.reports = (await res.json()).reports || [];
+    } catch { state.reports = []; }
+    const has = state.reports.length > 0;
+    $("tab-report").hidden = !has;
+    if (!has) { if (state.tab === "report") setTab("news"); return; }
+    $("report-select").replaceChildren(...state.reports.map((r) =>
+      el("option", { value: r.id }, `${fmtDate(r.date)} · ${sessionLabel(r.session)}`)));
+    $("report-select").hidden = state.reports.length < 2;
+    if (state.tab === "report") showReport(state.reportId);
+  }
+
+  /* ---------- Tabs, loading, events ---------- */
+  function setTab(tab) {
+    state.tab = tab;
+    document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+    $("view-news").hidden = tab !== "news";
+    $("view-report").hidden = tab !== "report";
+    history.replaceState(null, "", tab === "report" ? "#report" : location.pathname + location.search);
+    if (tab === "report") showReport(state.reportId);
+  }
+
+  async function loadNews() {
     try {
       const res = await fetch(`news.json?t=${Date.now()}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const first = !state.data;
-      state.data = data;
-      if (!data.symbols.includes(state.filter) && !["all", "market"].includes(state.filter)) state.filter = "all";
+      state.data = await res.json();
+      if (!["all", "market", ...state.data.symbols].includes(state.filter)) state.filter = "all";
       renderChips();
-      render();
-      if (first && !data.groups.length) $("grid").replaceChildren(el("div", { class: "empty" }, "No news in the last 24 hours."));
+      renderNews();
     } catch (err) {
       if (!state.data) {
         $("status").textContent = "Couldn't load news.";
@@ -298,19 +434,24 @@
       }
     }
   }
+  const refresh = () => { loadNews(); loadReports(); };
 
   document.addEventListener("click", (e) => {
+    const tab = e.target.closest("[data-tab]");
+    if (tab) { setTab(tab.dataset.tab); return; }
     const sortBtn = e.target.closest("[data-sort]");
-    if (sortBtn) { state.sort = sortBtn.dataset.sort; store.set("mn.sort", state.sort); render(); return; }
+    if (sortBtn) { state.sort = sortBtn.dataset.sort; store.set("mn.sort", state.sort); renderNews(); return; }
     const chip = e.target.closest("[data-filter]");
-    if (chip) { state.filter = chip.dataset.filter; render(); }
+    if (chip) { state.filter = chip.dataset.filter; renderNews(); }
   });
-  $("search").addEventListener("input", (e) => { state.query = e.target.value.trim().toLowerCase(); render(); });
+  $("search").addEventListener("input", (e) => { state.query = e.target.value.trim().toLowerCase(); renderNews(); });
+  $("report-select").addEventListener("change", (e) => showReport(e.target.value));
 
-  load();
-  setInterval(load, REFRESH_MS);
+  setTab(state.tab);
+  refresh();
+  setInterval(refresh, REFRESH_MS);
   setInterval(renderStatus, 60 * 1000);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 })();
 </script>
 </body>

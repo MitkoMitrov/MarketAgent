@@ -83,10 +83,26 @@ SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI"]
 
 ### 5. News Site (GitHub Pages)
 
-A static page with the top news of the last 24h, where duplicate / >90% similar stories
-are grouped into one card (main headline + "Similar coverage" list). It is rebuilt every
-15 minutes by [.github/workflows/news-pages.yml](.github/workflows/news-pages.yml)
+A static page with two tabs:
+- **News**: all watchlist + market news of the last 24h in a 3-column card grid with
+  thumbnails. Duplicate / >90% similar stories are grouped into one card (main headline +
+  "Similar coverage" list).
+- **Daily report**: the AI report with the day's stock moves, plus past reports.
+
+It is rebuilt every 15 minutes by [.github/workflows/news-pages.yml](.github/workflows/news-pages.yml)
 (Finnhub only, no OpenAI calls).
+
+**Thumbnails.** Finnhub often returns only a publisher logo (most Yahoo items), so the site
+builder reads the article's preview image (`og:image`) for stories without one
+([engine/thumbnails.py](engine/thumbnails.py)). Results are cached between runs with
+`actions/cache` (`.cache/thumbnails.json`), so each run only checks new articles. Images used
+by 3+ unrelated stories are treated as publisher defaults and skipped.
+
+**Reports and the `data` branch.** The daily job saves each AI report as JSON to the
+`data` branch (`reports/<date>-<session>.json` + `reports/index.json`, see
+[engine/report_store.py](engine/report_store.py)) and triggers a site rebuild. The news job
+checks out `data` and copies the reports into the page. Code stays on `main`; generated
+data stays on `data`.
 
 One-time setup:
 1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
@@ -99,6 +115,8 @@ Build locally:
 ```powershell
 python -m engine.build_news_site --out site                       # live from Finnhub
 python -m engine.build_news_site --out site --snapshot data/snapshots/<file>.json   # offline
+python -m engine.report_store --data-dir data-store                # save latest AI report like CI does
+python -m engine.build_news_site --out site --data-dir data-store  # include stored reports
 python -m http.server 8000 -d site                                 # open http://localhost:8000
 ```
 
@@ -111,6 +129,15 @@ How grouping works ([engine/news_grouping.py](engine/news_grouping.py)):
 - Text-only: the same story written with completely different words stays separate.
 
 The Telegram *Market News* post uses the same grouping (`· +N similar`).
+
+**AI input.** The snapshot keeps *all* company news of the last 24h. Before the OpenAI call,
+[engine/data_curator.py](engine/data_curator.py) groups duplicates and sends the top
+`NEWS_PER_STOCK` (5) distinct stories per stock (most-covered first, then newest), so the
+prompt size and cost stay the same no matter how much news Finnhub returns.
+
+**Failures.** If the AI step fails (e.g. no OpenAI credits), the pipeline still sends the
+stock summary, Market News, Company Info and earnings alerts to Telegram, then exits non-zero
+so the GitHub run is marked failed.
 
 ## 🎯 Usage
 
@@ -252,7 +279,9 @@ MarketAgent/
 │   ├── finnhub_client.py             # SYMBOLS + lazy Finnhub client
 │   ├── news_fetcher.py               # Company/market news fetch + relevance filter
 │   ├── news_grouping.py              # Duplicate / similar news grouping
-│   ├── build_news_site.py            # Builds site/ (index.html + news.json)
+│   ├── build_news_site.py            # Builds site/ (index.html + news.json + reports)
+│   ├── thumbnails.py                 # og:image lookup for missing thumbnails (cached)
+│   ├── report_store.py               # Saves AI reports as JSON to the data branch
 │   ├── data_curator.py               # Data curation for AI
 │   │                                 # - Per-stock briefings
 │   │                                 # - News organization
@@ -284,7 +313,8 @@ MarketAgent/
 ├── web/
 │   └── index.html                    # News page (cards), deployed to GitHub Pages
 ├── tests/
-│   ├── test_news_grouping.py         # python -m unittest tests.test_news_grouping
+│   ├── test_news_grouping.py         # python -m unittest discover -s tests -t .
+│   ├── test_pipeline_parts.py        # curation, report storage, site builder
 │   └── test_mock_run.py              # Test utilities
 ├── .env                              # API keys (gitignored - create this!)
 ├── .gitignore

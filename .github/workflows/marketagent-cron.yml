@@ -11,16 +11,22 @@ on:
     - cron: "30 21 * * *"  # 21:30 UTC = 22:30 Skopje (CET/Winter) - After-Market
 
 permissions:
-  contents: read
+  contents: write   # push the report to the data branch
+  actions: write    # trigger a news-site rebuild
+
+concurrency:
+  group: daily-report
+  cancel-in-progress: false
 
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: "pip"
@@ -29,7 +35,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Set market session
-        run: echo "MARKET_SESSION=after-market" >> $GITHUB_ENV
+        run: echo "MARKET_SESSION=${{ inputs.market_session || 'after-market' }}" >> $GITHUB_ENV
 
       - name: Run full pipeline
         env:
@@ -43,3 +49,33 @@ jobs:
           TELEGRAM_TOPIC_EARNINGS: ${{ secrets.TELEGRAM_TOPIC_EARNINGS }}
           MARKET_SESSION: ${{ env.MARKET_SESSION }}
         run: python run_full_pipeline.py
+
+      # The steps below also run when the pipeline reported a failure (e.g. Telegram
+      # was down): a report that was generated is still worth saving.
+      - name: Check out data branch
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@v7
+        with:
+          ref: data
+          path: data-store
+
+      - name: Save report to data branch
+        if: ${{ !cancelled() }}
+        run: |
+          python -m engine.report_store --data-dir data-store
+          cd data-store
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No new report to save."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "report: $(date -u +%F) ${MARKET_SESSION}"
+          git push
+
+      - name: Refresh news site
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run news-pages.yml --ref "${{ github.ref_name }}"

@@ -2,8 +2,8 @@
 News fetching from Finnhub: company news per symbol and filtered general market news.
 
 All functions return items in one normalized shape:
-    {"headline", "source", "summary", "url", "timestamp", "symbols": [...], "category"}
-where category is "company" or "market".
+    {"headline", "source", "summary", "url", "image", "timestamp", "symbols": [...], "category"}
+where category is "company" or "market", and image is "" when there is no real thumbnail.
 """
 from datetime import datetime, timedelta, timezone
 
@@ -72,29 +72,49 @@ def is_relevant_market_news(item: dict, symbols=SYMBOLS) -> bool:
     return _contains_any(headline, _POSITIVE_KEYWORDS) or _contains_any(summary, _POSITIVE_KEYWORDS)
 
 
+# Publisher/source logos that Finnhub returns instead of an article image.
+_PLACEHOLDER_IMAGE_MARKERS = ("/logo/", "logo.", "_logo", "yahoo_finance_en-us", "default", "placeholder")
+
+
+def clean_image_url(url: str) -> str:
+    """Return the article image URL, or "" for missing/non-https/logo placeholders."""
+    url = (url or "").strip()
+    if not url.lower().startswith("https://"):
+        return ""
+    if any(m in url.lower() for m in _PLACEHOLDER_IMAGE_MARKERS):
+        return ""
+    return url
+
+
 def _normalize(raw: dict, symbols: list, category: str) -> dict:
     return {
         "headline": raw.get("headline", "") or "",
         "source": raw.get("source", "") or "",
         "summary": raw.get("summary", "") or "",
         "url": raw.get("url", "") or "",
+        "image": clean_image_url(raw.get("image", "")),
         "timestamp": raw.get("datetime", 0) or 0,
         "symbols": symbols,
         "category": category,
     }
 
 
-def fetch_company_news(symbol: str, days: int = 1, limit: int = 10) -> list:
-    """Fetch recent company news for one symbol, newest first, up to `limit` items."""
+def fetch_company_news(symbol: str, hours: int = 24, limit=None) -> list:
+    """Fetch all company news for one symbol from the last `hours`, newest first.
+
+    `limit` optionally caps the number of items (None = everything Finnhub returns)."""
     try:
-        to_date = datetime.now(timezone.utc)
-        from_date = to_date - timedelta(days=days)
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(hours=hours)
         news = get_client().company_news(
             symbol,
-            _from=from_date.strftime("%Y-%m-%d"),
-            to=to_date.strftime("%Y-%m-%d"),
+            _from=cutoff.strftime("%Y-%m-%d"),
+            to=now.strftime("%Y-%m-%d"),
         )
-        news = sorted(news, key=lambda x: x.get('datetime', 0), reverse=True)[:limit]
+        news = [n for n in news if n.get('datetime', 0) >= int(cutoff.timestamp())]
+        news.sort(key=lambda x: x.get('datetime', 0), reverse=True)
+        if limit:
+            news = news[:limit]
         return [_normalize(n, [symbol], "company") for n in news]
     except Exception as e:
         print(f"⚠️ Error fetching news for {symbol}: {e}")

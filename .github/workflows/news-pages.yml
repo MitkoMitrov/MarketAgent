@@ -1,7 +1,8 @@
 name: News Site (GitHub Pages)
 
-# Fetches news from Finnhub, groups duplicates and publishes the static news page.
-# No OpenAI calls here; the AI report stays in marketagent-cron.yml (once a day).
+# Fetches news from Finnhub, groups duplicates and publishes the static news page,
+# together with the AI reports stored on the `data` branch.
+# No OpenAI calls here; the AI report is produced by marketagent-cron.yml (once a day).
 
 on:
   workflow_dispatch:
@@ -26,27 +27,41 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+
+      - name: Check out stored reports (data branch)
+        uses: actions/checkout@v7
+        with:
+          ref: data
+          path: data-store
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install finnhub-python python-dotenv
+        run: pip install finnhub-python python-dotenv requests
+
+      # Thumbnail lookups (og:image) are cached between runs so only new articles are fetched.
+      - name: Restore thumbnail cache
+        uses: actions/cache@v6
+        with:
+          path: .cache
+          key: thumbs-${{ github.run_id }}
+          restore-keys: thumbs-
 
       - name: Build site
         env:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-        run: python -m engine.build_news_site --out site
+        run: python -m engine.build_news_site --out site --data-dir data-store
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

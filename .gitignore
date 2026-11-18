@@ -52,3 +52,10 @@ Thumbs.db
 
 # Generated news site (built by CI)
 site/
+
+# AI report text files and local data-branch checkout
+reports/
+data-store/
+
+# Thumbnail lookup cache (persisted in CI with actions/cache)
+.cache/

@@ -81,7 +81,9 @@ def main():
     else:
         print("📅 Non-working day detected (weekend/holiday). Market News only.")
     
-    # Step 1: Fetch data
+    failures = []
+
+    # Step 1: Fetch data (everything else depends on it)
     if not run_step(
         "1/4 - Fetch Market Data",
         "python -m finnhub_scripts.fetch_and_store",
@@ -89,16 +91,19 @@ def main():
     ):
         print("\n⚠️  Pipeline stopped due to data fetch failure")
         sys.exit(1)
-    
+
     if working_day:
-        # Step 2: Generate AI report
+        # Step 2: Generate AI report. On failure, keep going: Telegram still gets the
+        # stock summary, market news, company info and earnings alerts.
+        os.environ.pop("AI_REPORT_FAILED", None)
         if not run_step(
             "2/4 - Generate AI Report",
             "python -m engine.run_ai_report",
             "Generating market analysis report with OpenAI GPT-4..."
         ):
-            print("\n⚠️  Pipeline stopped due to AI report generation failure")
-            sys.exit(1)
+            failures.append("AI report")
+            os.environ["AI_REPORT_FAILED"] = "1"
+            print("\n⚠️  AI report failed; continuing without it")
 
         # Step 3: Send to Telegram
         os.environ.pop("MARKET_NEWS_ONLY", None)
@@ -107,8 +112,7 @@ def main():
             "python -m engine.send_telegram_report",
             "Posting reports to Telegram group topics..."
         ):
-            print("\n⚠️  Pipeline stopped due to Telegram send failure")
-            sys.exit(1)
+            failures.append("Telegram reports")
 
         # Step 4: Send earnings alerts
         if not run_step(
@@ -116,7 +120,7 @@ def main():
             "python -m engine.send_earnings_alert",
             "Checking and sending upcoming earnings alerts..."
         ):
-            print("\n⚠️  Pipeline step failed but continuing...")
+            failures.append("Earnings alerts")
     else:
         # Non-working day: Market news only
         os.environ["MARKET_NEWS_ONLY"] = "1"
@@ -125,11 +129,15 @@ def main():
             "python -m engine.send_telegram_report",
             "Posting only Market News to Telegram..."
         ):
-            print("\n⚠️  Pipeline stopped due to Telegram send failure")
-            sys.exit(1)
-    
-    # Success
+            failures.append("Telegram market news")
+
     print("\n" + "=" * 60)
+    if failures:
+        # Non-zero exit so the GitHub Actions run shows as failed and you get notified.
+        print(f"⚠️  PIPELINE FINISHED WITH FAILURES: {', '.join(failures)}")
+        print("=" * 60)
+        sys.exit(1)
+
     print("✅ PIPELINE COMPLETE!")
     print("=" * 60)
     print("📊 Market data fetched")

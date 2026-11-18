@@ -18,6 +18,7 @@ Algorithm
    rest are listed as "similar".
 """
 import re
+from collections import Counter
 from difflib import SequenceMatcher
 
 DEFAULT_THRESHOLD = 0.90
@@ -35,6 +36,12 @@ def clean_text(text: str) -> str:
     """Repair common mojibake (U+FFFD) and collapse whitespace."""
     if not text:
         return ""
+    if "â\u0080" in text or "Ã" in text:
+        # UTF-8 bytes that were decoded as Latin-1 upstream ("didnâ\x80\x99t" -> "didn’t").
+        try:
+            text = text.encode("latin-1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
     text = _APOSTROPHE_RE.sub("'", text)
     text = _SPACED_DASH_RE.sub(" – ", text)
     text = text.replace("�", " ").replace("\xa0", " ")
@@ -47,62 +54,69 @@ def normalize(text: str) -> str:
     return _SPACES_RE.sub(" ", _NON_ALNUM_RE.sub(" ", text)).strip()
 
 
-def _ratio(a: str, b: str, threshold: float) -> float:
-    """SequenceMatcher ratio, short-circuiting with its cheap upper bounds."""
-    if not a or not b:
-        return 0.0
-    sm = SequenceMatcher(None, a, b, autojunk=False)
-    if sm.real_quick_ratio() < threshold or sm.quick_ratio() < threshold:
-        return 0.0
-    return sm.ratio()
-
-
 def text_similarity(a: str, b: str, threshold: float = 0.0) -> float:
     """Similarity in [0, 1] of two texts (order-sensitive and word-order-insensitive).
 
     Results below `threshold` may be reported as 0.0 (fast path)."""
-    na, nb = normalize(a), normalize(b)
-    if not na or not nb:
-        return 0.0
-    if na == nb:
-        return 1.0
-    sa, sb = " ".join(sorted(na.split())), " ".join(sorted(nb.split()))
-    return max(_ratio(na, nb, threshold), _ratio(sa, sb, threshold))
+    return _Text(normalize(a)).similarity(_Text(normalize(b)), threshold)
+
+
+class _Text:
+    """A normalized text prepared for fast repeated comparisons."""
+    __slots__ = ("plain", "sorted", "length", "chars")
+
+    def __init__(self, text: str):
+        self.plain = text
+        self.sorted = " ".join(sorted(text.split()))
+        self.length = len(text)
+        self.chars = Counter(text)  # same multiset for plain and word-sorted text
+
+    def __bool__(self):
+        return self.length > 0
+
+    def similarity(self, other: "_Text", threshold: float) -> float:
+        """max(plain ratio, word-sorted ratio); 0.0 when cheap bounds rule out `threshold`."""
+        if not self.length or not other.length:
+            return 0.0
+        total = self.length + other.length
+        # Upper bound 1: length difference.
+        if 2.0 * min(self.length, other.length) / total < threshold:
+            return 0.0
+        # Upper bound 2: shared characters (independent of order).
+        small, big = (self.chars, other.chars) if len(self.chars) <= len(other.chars) else (other.chars, self.chars)
+        shared = sum(min(n, big.get(ch, 0)) for ch, n in small.items())
+        if 2.0 * shared / total < threshold:
+            return 0.0
+        if self.plain == other.plain:
+            return 1.0
+        best = SequenceMatcher(None, self.plain, other.plain, autojunk=False).ratio()
+        if threshold <= 0 or best < threshold:  # no threshold: always report the true maximum
+            best = max(best, SequenceMatcher(None, self.sorted, other.sorted, autojunk=False).ratio())
+        return best
 
 
 class _Article:
     """Pre-normalized article used during comparison."""
-    __slots__ = ("item", "head", "head_sorted", "head_numbers", "summ", "summ_sorted")
+    __slots__ = ("item", "head", "head_numbers", "summ")
 
     def __init__(self, item: dict):
         self.item = item
-        self.head = normalize(item.get("headline", ""))
-        self.head_sorted = " ".join(sorted(self.head.split()))
+        self.head = _Text(normalize(item.get("headline", "")))
         self.head_numbers = frozenset(_NUMBER_RE.findall(clean_text(item.get("headline", ""))))
         summ = normalize(item.get("summary", ""))
-        self.summ = summ if len(summ) >= _MIN_SUMMARY_LEN else ""
-        self.summ_sorted = " ".join(sorted(self.summ.split())) if self.summ else ""
-
-    def _head_sim(self, other: "_Article", threshold: float) -> float:
-        if not (self.head and other.head):
-            return 0.0
-        return max(_ratio(self.head, other.head, threshold),
-                   _ratio(self.head_sorted, other.head_sorted, threshold))
+        self.summ = _Text(summ if len(summ) >= _MIN_SUMMARY_LEN else "")
 
     def similar_to(self, other: "_Article", threshold: float) -> bool:
         # Template headlines ("A $2.4 Billion Fund Dumps These 3 Stocks" vs "A $7.2 Billion ...")
         # are textually ~90% alike but are different stories: numbers carry the facts.
         if self.head_numbers and other.head_numbers and self.head_numbers != other.head_numbers:
             return False
-        if self._head_sim(other, threshold) >= threshold:
+        if self.head.similarity(other.head, threshold) >= threshold:
             return True
         # Summaries alone are not enough: some publishers reuse one boilerplate
         # summary (e.g. a fund's investor letter) for articles about different stocks.
-        if self.summ and other.summ and (
-            _ratio(self.summ, other.summ, threshold) >= threshold
-            or _ratio(self.summ_sorted, other.summ_sorted, threshold) >= threshold
-        ):
-            return self._head_sim(other, _SUMMARY_MATCH_MIN_HEADLINE) >= _SUMMARY_MATCH_MIN_HEADLINE
+        if self.summ.similarity(other.summ, threshold) >= threshold:
+            return self.head.similarity(other.head, _SUMMARY_MATCH_MIN_HEADLINE) >= _SUMMARY_MATCH_MIN_HEADLINE
         return False
 
 
@@ -136,6 +150,8 @@ def merge_exact_duplicates(items: list) -> list:
                 existing["categories"].append(item["category"])
             if len(item["summary"]) > len(existing["summary"]):
                 existing["summary"] = item["summary"]
+            if not existing.get("image") and item.get("image"):
+                existing["image"] = item["image"]
             existing["timestamp"] = max(existing["timestamp"], item["timestamp"])
         for k in keys:
             by_key.setdefault(k, existing)
@@ -156,7 +172,7 @@ def group_news(items: list, threshold: float = DEFAULT_THRESHOLD) -> list:
 
     Returns:
         List of groups, newest first:
-        {"primary": item, "similar": [items newest first], "size": int,
+        {"primary": item, "similar": [items newest first], "size": int, "image": str,
          "symbols": [...], "sources": [...], "categories": [...],
          "latest_ts": int, "first_ts": int}
     """
@@ -187,6 +203,7 @@ def group_news(items: list, threshold: float = DEFAULT_THRESHOLD) -> list:
         timestamps = [m["timestamp"] for m in members]
         groups.append({
             "primary": primary,
+            "image": next((m["image"] for m in [primary, *similar] if m.get("image")), ""),
             "similar": similar,
             "size": len(members),
             "symbols": sorted({s for m in members for s in m["symbols"]}),

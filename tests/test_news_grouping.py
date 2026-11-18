@@ -25,6 +25,10 @@ class CleanTextTests(unittest.TestCase):
         self.assertEqual(clean_text("students � not players"), "students – not players")
         self.assertEqual(clean_text("�Bearish engulfing� patterns"), "Bearish engulfing patterns")
 
+    def test_repairs_latin1_decoded_utf8(self):
+        self.assertEqual(clean_text("they didnât come"), "they didn’t come")
+        self.assertEqual(clean_text("café stays"), "café stays")  # real Latin-1 text untouched
+
 
 class SimilarityTests(unittest.TestCase):
     def test_identical_ignoring_case_and_punctuation(self):

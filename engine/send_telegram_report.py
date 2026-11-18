@@ -19,6 +19,7 @@ TELEGRAM_TOPIC_MARKET_NEWS = os.getenv("TELEGRAM_TOPIC_MARKET_NEWS")
 TELEGRAM_TOPIC_COMPANY_INFO = os.getenv("TELEGRAM_TOPIC_COMPANY_INFO")
 MARKET_SESSION = os.getenv("MARKET_SESSION", "after-market")  # Default to after-market for reports
 MARKET_NEWS_ONLY = os.getenv("MARKET_NEWS_ONLY", "0") == "1"
+AI_REPORT_FAILED = os.getenv("AI_REPORT_FAILED", "0") == "1"  # set by run_full_pipeline
 
 if MARKET_NEWS_ONLY:
     if not all([TELEGRAM_CHAT_ID, TELEGRAM_TOPIC_MARKET_NEWS]):
@@ -67,8 +68,12 @@ def send_telegram_report(snapshot_data):
     # Get market session label
     session_label = "📈 PRE-MARKET" if MARKET_SESSION == "pre-market" else "📉 AFTER-MARKET"
     
-    # Load latest AI report text (fallback to notice if missing)
-    ai_report_text, ai_report_name = load_latest_ai_report()
+    # Load latest AI report text (fallback to notice if missing). If this run's AI step
+    # failed, don't fall back to an older report file.
+    if AI_REPORT_FAILED:
+        ai_report_text = "⚠️ AI analysis is unavailable today (report generation failed)."
+    else:
+        ai_report_text, ai_report_name = load_latest_ai_report()
 
     # Format stock summary
     stock_summary = format_stock_summary(snapshot_data)

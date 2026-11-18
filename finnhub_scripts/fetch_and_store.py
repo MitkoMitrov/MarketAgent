@@ -1,6 +1,7 @@
 """
 Comprehensive Finnhub data fetcher for market analysis.
-Collects: quotes, news, company profile and basic financials, and saves a snapshot JSON.
+Collects: quotes, all company news of the last 24h, market news, company profile and
+basic financials, and saves a snapshot JSON. (Duplicates are removed later, in curation.)
 
 Run from the project root:  python -m finnhub_scripts.fetch_and_store
 """
@@ -99,6 +100,7 @@ def build_snapshot():
                 "source": item["source"],
                 "summary": item["summary"],
                 "url": item["url"],
+                "image": item["image"],
                 "timestamp": item["timestamp"],
             })
 
@@ -108,6 +110,7 @@ def build_snapshot():
             "source": item["source"],
             "summary": item["summary"],
             "url": item["url"],
+            "image": item["image"],
             "timestamp": item["timestamp"],
         })
 
