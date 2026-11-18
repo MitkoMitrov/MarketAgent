@@ -4,6 +4,8 @@ Formats snapshot data into Telegram-friendly sections.
 """
 from datetime import datetime, timezone
 
+from engine.news_grouping import group_news
+
 
 def format_daily_reports_from_ai(ai_report_text):
     """Format the AI-generated market report for the Daily Reports topic.
@@ -81,40 +83,39 @@ def format_stock_summary(snapshot):
 def format_market_news(snapshot, max_items=10):
     """
     Format general market news for the Market News topic.
-    Format: [HH:MM] Source: Headline(link)
+    Duplicate/similar stories are grouped; one line per story, newest first.
+    Format: [dd/mm/yyyy HH:MM] Source: Headline(link) · +N similar
     """
-    lines = []
-
-    lines.append("📰 Market News (Last 24h)")
-    lines.append("")
+    lines = ["📰 Market News (Last 24h)", ""]
 
     market_news = snapshot.get("market_news", [])
     if not market_news:
         lines.append("No significant market news today.")
         return "\n".join(lines)
 
-    for item in market_news[:max_items]:
+    groups = group_news([dict(n, symbols=[], category="market") for n in market_news])
+
+    for group in groups[:max_items]:
+        item = group["primary"]
         headline = item.get("headline", "")
-        source = item.get("source", "Unknown")
+        source = item.get("source") or "Unknown"
         url = item.get("url", "")
         timestamp = item.get("timestamp", 0)
 
         time_str = ""
         if timestamp:
             try:
-                dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                time_str = dt.strftime("%d/%m/%Y %H:%M")
+                time_str = datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime("%d/%m/%Y %H:%M")
             except Exception:
                 time_str = ""
 
-        # Build line: [time] Source: Headline(link)
-        if url:
-            lines.append(f"[{time_str}] {source}: [{headline}]({url})")
-        else:
-            lines.append(f"[{time_str}] {source}: {headline}")
+        line = f"[{time_str}] {source}: [{headline}]({url})" if url else f"[{time_str}] {source}: {headline}"
+        if group["similar"]:
+            line += f" · +{len(group['similar'])} similar"
+        lines.append(line)
 
     lines.append("")
-    lines.append(f"Total: {len(market_news)} market news items in last 24h")
+    lines.append(f"Total: {len(groups)} stories ({len(market_news)} articles) in last 24h")
 
     return "\n".join(lines)
 

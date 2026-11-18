@@ -49,3 +49,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Generated news site (built by CI)
+site/

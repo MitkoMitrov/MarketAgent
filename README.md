@@ -66,10 +66,10 @@ TELEGRAM_TOPIC_MARKET_NEWS=4
 
 ### 3. Configure Stock Symbols
 
-Edit the `SYMBOLS` list in [finnhub_scripts/fetch_and_store.py](finnhub_scripts/fetch_and_store.py):
+Edit the `SYMBOLS` list in [engine/finnhub_client.py](engine/finnhub_client.py) (shared by the snapshot, the news site and Telegram):
 
 ```python
-SYMBOLS = ["TSLA", "AMD", "TTWO", "GOOG", "NVDA", "MSTR"]
+SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI"]
 ```
 
 ### 4. Create Telegram Group with Topics
@@ -80,6 +80,37 @@ SYMBOLS = ["TSLA", "AMD", "TTWO", "GOOG", "NVDA", "MSTR"]
    - **Daily Reports** (get topic ID, set as `TELEGRAM_TOPIC_DAILY_REPORTS`)
    - **Market News** (get topic ID, set as `TELEGRAM_TOPIC_MARKET_NEWS`)
 4. Add your bot to the group as admin
+
+### 5. News Site (GitHub Pages)
+
+A static page with the top news of the last 24h, where duplicate / >90% similar stories
+are grouped into one card (main headline + "Similar coverage" list). It is rebuilt every
+15 minutes by [.github/workflows/news-pages.yml](.github/workflows/news-pages.yml)
+(Finnhub only, no OpenAI calls).
+
+One-time setup:
+1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+2. Make sure the `FINNHUB_API_KEY` repository secret exists (already used by the daily job).
+3. Run the workflow once from the **Actions** tab (*News Site (GitHub Pages)* → *Run workflow*).
+   The page URL appears in the run summary (`https://<user>.github.io/<repo>/`).
+
+Build locally:
+
+```powershell
+python -m engine.build_news_site --out site                       # live from Finnhub
+python -m engine.build_news_site --out site --snapshot data/snapshots/<file>.json   # offline
+python -m http.server 8000 -d site                                 # open http://localhost:8000
+```
+
+How grouping works ([engine/news_grouping.py](engine/news_grouping.py)):
+- Same URL or identical headline → one item (tickers merged, e.g. `TSLA` + `GOOG`).
+- Headlines ≥ 90% similar (character similarity, also with words sorted) → same story.
+- Identical summaries also group, but only if the headlines are ≥ 60% similar
+  (publishers reuse boilerplate summaries for different articles).
+- Headlines with different numbers (`$2.4B fund…` vs `$7.2B fund…`) are never grouped.
+- Text-only: the same story written with completely different words stays separate.
+
+The Telegram *Market News* post uses the same grouping (`· +N similar`).
 
 ## 🎯 Usage
 
@@ -121,7 +152,7 @@ python run_full_pipeline.py
 Collect comprehensive market data from Finnhub:
 
 ```powershell
-python finnhub_scripts/fetch_and_store.py
+python -m finnhub_scripts.fetch_and_store
 ```
 
 **What it does:**
@@ -212,12 +243,16 @@ python -m engine.send_telegram_report
 MarketAgent/
 ├── finnhub_scripts/
 │   ├── __init__.py
-│   └── fetch_and_store.py           # Finnhub data fetcher
+│   └── fetch_and_store.py           # Snapshot builder (python -m finnhub_scripts.fetch_and_store)
 │                                     # - Fetches quotes, profiles, financials
 │                                     # - Today's news (10 per stock)
 │                                     # - Market news (24h, filtered)
 ├── engine/
 │   ├── __init__.py
+│   ├── finnhub_client.py             # SYMBOLS + lazy Finnhub client
+│   ├── news_fetcher.py               # Company/market news fetch + relevance filter
+│   ├── news_grouping.py              # Duplicate / similar news grouping
+│   ├── build_news_site.py            # Builds site/ (index.html + news.json)
 │   ├── data_curator.py               # Data curation for AI
 │   │                                 # - Per-stock briefings
 │   │                                 # - News organization
@@ -246,7 +281,10 @@ MarketAgent/
 │       └── market_snapshot-*.json
 ├── reports/                          # AI-generated reports
 │   └── ai_report-*.txt
+├── web/
+│   └── index.html                    # News page (cards), deployed to GitHub Pages
 ├── tests/
+│   ├── test_news_grouping.py         # python -m unittest tests.test_news_grouping
 │   └── test_mock_run.py              # Test utilities
 ├── .env                              # API keys (gitignored - create this!)
 ├── .gitignore
@@ -294,19 +332,19 @@ assessment of trade tensions and increased competition in AI chips.
 
 ### Change Stock Symbols
 
-Edit [finnhub_scripts/fetch_and_store.py](finnhub_scripts/fetch_and_store.py):
+Edit [engine/finnhub_client.py](engine/finnhub_client.py):
 
 ```python
-SYMBOLS = ["TSLA", "AMD", "TTWO", "GOOG", "NVDA", "MSTR"]
+SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI"]
 ```
 
 ### Change News Fetching Parameters
 
-In [finnhub_scripts/fetch_and_store.py](finnhub_scripts/fetch_and_store.py):
+In [engine/news_fetcher.py](engine/news_fetcher.py):
 
 ```python
 # Fetch today's news (days=1), 10 items per stock
-fetch_news(symbol, days=1, limit=10)
+fetch_company_news(symbol, days=1, limit=10)
 
 # Fetch market news from last 24 hours
 fetch_market_news(hours=24)
@@ -314,7 +352,7 @@ fetch_market_news(hours=24)
 
 ### Customize Market News Filtering
 
-In [finnhub_scripts/fetch_and_store.py](finnhub_scripts/fetch_and_store.py), edit `_is_relevant_market_news()`:
+In [engine/news_fetcher.py](engine/news_fetcher.py), edit `is_relevant_market_news()` and the keyword sets:
 
 ```python
 POSITIVE_KEYWORDS = ["gdp", "cpi", "fed", "earnings", "ai", "crypto"]
