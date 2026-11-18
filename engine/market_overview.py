@@ -1,7 +1,7 @@
 """
 US market and economy overview for the news site (Finnhub free tier only).
 
-Every run (15 min): market status + quotes for index, sector and macro ETFs and crypto.
+Every run (30 min): market status + quotes for index, sector and macro ETFs and crypto.
 Cached (SlowCache): market holidays, IPO calendar, market-wide earnings calendar, FDA
 advisory committee calendar.
 

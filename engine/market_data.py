@@ -4,7 +4,7 @@ Stock data for the watchlist: quote, company profile, key metrics and upcoming e
 Used by the daily snapshot (finnhub_scripts.fetch_and_store, shown in Telegram) and by the
 news site, so both show the same numbers. Quotes are always fetched fresh; profile, metrics
 and earnings change slowly, so callers can pass a cache file to fetch them at most every
-META_TTL_S (the site rebuilds every 15 minutes and Finnhub's free tier allows 60 calls/min).
+META_TTL_S (the site rebuilds every 30 minutes and Finnhub's free tier allows 60 calls/min).
 
 Units follow Finnhub: market_cap is in millions of USD, volume (10-day average) in millions
 of shares.

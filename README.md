@@ -100,7 +100,7 @@ A static page (http://mitko.mk/MarketAgent/) with these tabs:
   the free plan has no direct yields/forex/commodities) and the FDA advisory committee calendar.
 - **Daily report**: the AI report with the day's stock moves, plus past reports.
 
-It is rebuilt every 15 minutes by [.github/workflows/news-pages.yml](.github/workflows/news-pages.yml)
+It is rebuilt every 30 minutes by [.github/workflows/news-pages.yml](.github/workflows/news-pages.yml)
 (Finnhub only, no OpenAI calls). Quotes, market status and news are fetched every run (~45 calls);
 company details, calendars and metrics change slowly and are cached for 6–24 hours
 (`.cache/*.json`, persisted with `actions/cache`). All Finnhub calls go through a rate limiter

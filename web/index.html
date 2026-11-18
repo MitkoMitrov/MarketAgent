@@ -362,7 +362,7 @@
 <script>
 (() => {
   const REFRESH_MS = 5 * 60 * 1000;
-  const STALE_MIN = 60;
+  const STALE_MIN = 75;  // site rebuilds every 30 min; warn after a missed run
   const SIMILAR_VISIBLE = 3;
 
   const store = {

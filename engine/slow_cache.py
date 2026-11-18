@@ -1,6 +1,6 @@
 """
 Small JSON cache for Finnhub data that changes slowly (insider trades, analyst ratings,
-filings, calendars...). The news site rebuilds every 15 minutes; with this cache each of
+filings, calendars...). The news site rebuilds every 30 minutes; with this cache each of
 those endpoints is called at most once per TTL. A failed fetch is never cached: the last
 good value (if any) is returned and the next run tries again.
 """
