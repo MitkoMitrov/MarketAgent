@@ -4,6 +4,7 @@ Formats snapshot data into Telegram-friendly sections.
 """
 from datetime import datetime, timezone
 
+from engine.market_data import format_market_cap
 from engine.news_grouping import group_news
 
 
@@ -178,7 +179,7 @@ def format_company_info(snapshot):
         
         # Trading metrics
         lines.append(f"• *Volume:* {volume:.2f}M")
-        lines.append(f"• *Market Cap:* ${market_cap:.2f}B")
+        lines.append(f"• *Market Cap:* {format_market_cap(market_cap)}")
         
         # Valuation metrics
         if pe_ratio:

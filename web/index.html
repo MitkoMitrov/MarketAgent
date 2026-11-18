@@ -79,6 +79,8 @@
     font: inherit; font-size: 12.5px; font-weight: 500; padding: 4px 10px; border-radius: 999px; cursor: pointer;
   }
   .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip .chg { margin-left: 5px; font-variant-numeric: tabular-nums; }
+  .chip[aria-pressed="true"] .chg { color: inherit; opacity: .85; }
   .search {
     flex: 1 1 200px; max-width: 300px; min-width: 0; border: 1px solid var(--border); background: var(--surface);
     color: var(--text); font: inherit; font-size: 13.5px; padding: 6px 10px; border-radius: 8px;
@@ -153,6 +155,40 @@
   .report-body strong { color: var(--text); }
   .disclaimer { font-size: 12px; color: var(--text-3); margin-top: 10px; }
 
+  /* Stocks */
+  .section-title { font-size: 13px; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); margin: 0 0 10px; }
+  .stocks-note { color: var(--text-3); font-size: 13px; margin: -6px 0 16px; }
+  .earnings { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-bottom: 26px; }
+  @media (max-width: 640px) {
+    .earnings { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
+    .earn { scroll-snap-align: start; }
+  }
+  .earn { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; box-shadow: var(--shadow); font-size: 13px; color: var(--text-2); }
+  .earn-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+  .earn-top b { color: var(--text); font-size: 15px; }
+  .when { font-size: 11.5px; font-weight: 650; padding: 1px 7px; border-radius: 5px; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+  .when.soon { background: var(--warn-bg); color: var(--warn-text); }
+  .stock { padding: 16px; gap: 12px; }
+  .stock-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .stock-head .sym { font-size: 18px; font-weight: 750; letter-spacing: .01em; }
+  .stock-head .name { font-size: 12.5px; color: var(--text-3); overflow-wrap: anywhere; }
+  .price { text-align: right; white-space: nowrap; }
+  .price .last { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .price .delta { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .range { font-size: 12px; color: var(--text-3); }
+  .range-row { display: flex; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+  .range-row span:first-child { font-weight: 600; color: var(--text-2); }
+  .track { position: relative; height: 6px; border-radius: 3px; background: var(--surface-2); margin: 5px 0 3px; }
+  .track i { position: absolute; top: -3px; width: 4px; height: 12px; margin-left: -2px; border-radius: 2px; background: var(--accent); }
+  .track-ends { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 0; padding-top: 12px; border-top: 1px solid var(--border); }
+  .metrics div { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+  .metrics dt { color: var(--text-3); }
+  .metrics dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stock-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-3); margin-top: auto; }
+  .linkish { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; white-space: nowrap; }
+  .linkish:hover { text-decoration: underline; text-underline-offset: 2px; }
+
   footer { color: var(--text-3); font-size: 12px; margin-top: 32px; text-align: center; }
 </style>
 </head>
@@ -167,6 +203,7 @@
 
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button class="tab" role="tab" id="tab-news" data-tab="news" aria-selected="true" aria-controls="view-news">News</button>
+    <button class="tab" role="tab" id="tab-stocks" data-tab="stocks" aria-selected="false" aria-controls="view-stocks" hidden>Stocks</button>
     <button class="tab" role="tab" id="tab-report" data-tab="report" aria-selected="false" aria-controls="view-report" hidden>Daily report</button>
   </nav>
 
@@ -181,6 +218,16 @@
     </div>
     <div id="banner"></div>
     <main class="grid" id="grid" aria-live="polite"></main>
+  </section>
+
+  <section id="view-stocks" role="tabpanel" aria-labelledby="tab-stocks" hidden>
+    <p class="stocks-note" id="stocks-note"></p>
+    <div id="earnings-wrap" hidden>
+      <h2 class="section-title">Upcoming earnings</h2>
+      <div class="earnings" id="earnings"></div>
+    </div>
+    <h2 class="section-title">Watchlist</h2>
+    <div class="grid" id="stocks"></div>
   </section>
 
   <section id="view-report" class="report" role="tabpanel" aria-labelledby="tab-report" hidden>
@@ -208,7 +255,7 @@
   };
   const state = {
     data: null, sort: store.get("mn.sort", "top"), filter: "all", query: "",
-    tab: location.hash === "#report" ? "report" : "news",
+    tab: ["#report", "#stocks"].includes(location.hash) ? location.hash.slice(1) : "news",
     reports: [], reportId: null, reportCache: {},
   };
   const $ = (id) => document.getElementById(id);
@@ -305,8 +352,13 @@
     const d = state.data;
     const hasMarket = d.groups.some((g) => g.categories.includes("market"));
     const options = [["all", "All"], ...(hasMarket ? [["market", "Market"]] : []), ...d.symbols.map((s) => [s, s])];
-    $("chips").replaceChildren(...options.map(([v, label]) =>
-      el("button", { type: "button", class: "chip", "data-filter": v, "aria-pressed": String(state.filter === v) }, label)));
+    const bySym = Object.fromEntries((d.stocks || []).map((s) => [s.symbol, s]));
+    $("chips").replaceChildren(...options.map(([v, label]) => {
+      const s = bySym[v];
+      const pct = s && s.price ? Number(s.change_percent) || 0 : null;
+      return el("button", { type: "button", class: "chip", "data-filter": v, "aria-pressed": String(state.filter === v) },
+        label, pct == null ? null : el("span", { class: `chg ${dirClass(pct)}` }, fmtPct(pct)));
+    }));
   }
   function renderStatus() {
     const d = state.data;
@@ -330,6 +382,91 @@
       : [el("div", { class: "empty" }, d.groups.length ? "No stories match this filter." : "No news in the last 24 hours.")]));
     $("footer").textContent = `Last ${d.window_hours}h · stories grouped when ≥ ${Math.round(d.threshold * 100)}% similar · data from Finnhub`;
     renderStatus();
+  }
+
+  /* ---------- Stocks (same figures as the Telegram Company Info + earnings messages) ---------- */
+  const num = (v) => (v == null || v === "" || !isFinite(v) ? null : Number(v));
+  const dirClass = (v) => (v > 0 ? "up" : v < 0 ? "down" : "");
+  const fmtPct = (v) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(2)}%`;
+  const fmtSigned = (v) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(2)}`;
+  const fmtPrice = (v) => (num(v) ? `$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—");
+  const fmtFixed = (v, d = 2) => (num(v) == null ? "—" : Number(v).toFixed(d));
+  function fmtCap(millions) {  // Finnhub: market cap in millions of USD
+    const m = num(millions);
+    if (!m) return "—";
+    if (m >= 1e6) return `$${(m / 1e6).toFixed(2)}T`;
+    if (m >= 1e3) return `$${(m / 1e3).toFixed(1)}B`;
+    return `$${m.toFixed(0)}M`;
+  }
+  const fmtVol = (millions) => (num(millions) ? `${Number(millions).toFixed(1)}M` : "—");
+  function isoDay(iso) { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); }
+  function daysUntil(iso) {
+    const t = new Date(); t.setHours(0, 0, 0, 0);
+    return Math.round((isoDay(iso) - t) / 86400000);
+  }
+  const whenLabel = (n) => (n <= 0 ? "Today" : n === 1 ? "Tomorrow" : `in ${n} days`);
+  const hourLabel = (h) => (h === "bmo" ? "before open" : h === "amc" ? "after close" : h === "dmh" ? "during market" : "");
+  const shortDate = (iso) => isoDay(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+
+  function rangeBar(label, low, high, price) {
+    const lo = num(low), hi = num(high), p = num(price);
+    if (!lo || !hi || hi <= lo) return null;
+    const pos = p ? Math.min(100, Math.max(0, ((p - lo) / (hi - lo)) * 100)) : null;
+    return el("div", { class: "range" },
+      el("div", { class: "range-row" }, el("span", {}, label)),
+      el("div", { class: "track", role: "img", "aria-label": `${label}: ${fmtPrice(lo)} to ${fmtPrice(hi)}` },
+        pos == null ? null : el("i", { style: `left:${pos.toFixed(1)}%` })),
+      el("div", { class: "track-ends" }, el("span", {}, fmtPrice(lo)), el("span", {}, fmtPrice(hi))));
+  }
+  function metric(label, value) { return el("div", {}, el("dt", {}, label), el("dd", {}, value)); }
+
+  function stockCard(s, nextEarning, storyCount) {
+    const pct = num(s.change_percent) || 0, chg = num(s.change) || 0;
+    const hasName = s.name && s.name !== s.symbol;
+    const head = el("div", { class: "stock-head" },
+      el("div", {}, el("div", { class: "sym" }, s.symbol),
+        el("div", { class: "name" }, [hasName ? s.name : null, s.industry && s.industry !== "N/A" ? s.industry : null].filter(Boolean).join(" · ") || "ETF")),
+      el("div", { class: "price" }, el("div", { class: "last" }, fmtPrice(s.price)),
+        num(s.price) ? el("div", { class: `delta ${dirClass(pct)}` }, `${fmtSigned(chg)} (${fmtPct(pct)})`) : null));
+    const metrics = el("dl", { class: "metrics" },
+      metric("Open", fmtPrice(s.open)), metric("Prev close", fmtPrice(s.previous_close)),
+      metric("P/E", fmtFixed(s.pe_ratio)), metric("Market cap", fmtCap(s.market_cap)),
+      metric("Beta", fmtFixed(s.beta)), metric("Avg vol (10d)", fmtVol(s.volume)));
+    const earnText = nextEarning
+      ? `Earnings ${shortDate(nextEarning.date)}${hourLabel(nextEarning.hour) ? ", " + hourLabel(nextEarning.hour) : ""}` : "";
+    const foot = el("div", { class: "stock-foot" }, el("span", {}, earnText),
+      storyCount ? el("button", { type: "button", class: "linkish", "data-goto": s.symbol }, `${storyCount} ${storyCount === 1 ? "story" : "stories"} →`) : null);
+    return el("article", { class: "card stock" }, head,
+      rangeBar("Today's range", s.low, s.high, s.price),
+      rangeBar("52-week range", s["52_week_low"], s["52_week_high"], s.price),
+      metrics, foot);
+  }
+  function earningCard(e) {
+    const n = daysUntil(e.date);
+    const bits = [hourLabel(e.hour), e.quarter && e.year ? `Q${e.quarter} ${e.year}` : null].filter(Boolean).join(" · ");
+    const est = [num(e.eps_estimate) != null ? `EPS est. ${Number(e.eps_estimate).toFixed(2)}` : null,
+                 num(e.revenue_estimate) ? `Revenue est. ${fmtCap(e.revenue_estimate / 1e6)}` : null].filter(Boolean).join(" · ");
+    return el("div", { class: "earn" },
+      el("div", { class: "earn-top" }, el("b", {}, e.symbol), el("span", { class: `when${n <= 7 ? " soon" : ""}` }, whenLabel(n))),
+      el("div", {}, shortDate(e.date) + (bits ? ` · ${bits}` : "")),
+      est ? el("div", {}, est) : null);
+  }
+  function renderStocks() {
+    const d = state.data;
+    const stocks = (d && d.stocks) || [];
+    $("tab-stocks").hidden = !stocks.length;
+    if (!stocks.length) { if (state.tab === "stocks") setTab("news"); return; }
+    const upcoming = (d.earnings || []).filter((e) => daysUntil(e.date) >= 0);
+    const next = {};
+    upcoming.forEach((e) => { next[e.symbol] ||= e; });
+    const counts = {};
+    d.groups.forEach((g) => g.symbols.forEach((s) => { counts[s] = (counts[s] || 0) + 1; }));
+    $("earnings-wrap").hidden = !upcoming.length;
+    $("earnings").replaceChildren(...upcoming.map(earningCard));
+    $("stocks").replaceChildren(...stocks.map((s) => stockCard(s, next[s.symbol], counts[s.symbol] || 0)));
+    const qt = Math.max(0, ...stocks.map((s) => num(s.quote_time) || 0));
+    $("stocks-note").textContent = (qt ? `Last trade data ${fullTime(qt)}` : `Updated ${fullTime(Date.parse(d.generated_at) / 1000)}`) +
+      " · Prices may be delayed · Market cap and volume from Finnhub";
   }
 
   /* ---------- Daily report ---------- */
@@ -414,8 +551,9 @@
     state.tab = tab;
     document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
     $("view-news").hidden = tab !== "news";
+    $("view-stocks").hidden = tab !== "stocks";
     $("view-report").hidden = tab !== "report";
-    history.replaceState(null, "", tab === "report" ? "#report" : location.pathname + location.search);
+    history.replaceState(null, "", tab === "news" ? location.pathname + location.search : `#${tab}`);
     if (tab === "report") showReport(state.reportId);
   }
 
@@ -427,6 +565,7 @@
       if (!["all", "market", ...state.data.symbols].includes(state.filter)) state.filter = "all";
       renderChips();
       renderNews();
+      renderStocks();
     } catch (err) {
       if (!state.data) {
         $("status").textContent = "Couldn't load news.";
@@ -439,6 +578,8 @@
   document.addEventListener("click", (e) => {
     const tab = e.target.closest("[data-tab]");
     if (tab) { setTab(tab.dataset.tab); return; }
+    const go = e.target.closest("[data-goto]");
+    if (go) { state.filter = go.dataset.goto; setTab("news"); renderNews(); window.scrollTo(0, 0); return; }
     const sortBtn = e.target.closest("[data-sort]");
     if (sortBtn) { state.sort = sortBtn.dataset.sort; store.set("mn.sort", state.sort); renderNews(); return; }
     const chip = e.target.closest("[data-filter]");

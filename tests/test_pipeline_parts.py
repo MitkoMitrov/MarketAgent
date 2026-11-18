@@ -61,6 +61,16 @@ class ImageTests(unittest.TestCase):
         self.assertEqual(clean_image_url("https://cdn.example.com/photo.jpg"), "https://cdn.example.com/photo.jpg")
 
 
+class TelegramCompanyInfoTests(unittest.TestCase):
+    def test_market_cap_shown_in_trillions(self):
+        from engine.telegram_formatter import format_company_info
+        text = format_company_info({"stocks": {"TSLA": {
+            "price": 380.11, "change": 0.37, "change_percent": 0.1, "high": 382.8, "low": 374.1,
+            "pe_ratio": 445.8, "52_week_high": 498.8, "52_week_low": 297.4, "volume": 38.4,
+            "market_cap": 1_501_178.4, "beta": 1.78}}})
+        self.assertIn("*Market Cap:* $1.50T", text)
+
+
 class ReportStoreTests(unittest.TestCase):
     def test_record_and_index(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -101,6 +111,7 @@ class BuildSiteTests(unittest.TestCase):
                          news("NVDA", "Nvidia beats estimates, raises guidance", 11)],
                 "market_news": [{"headline": "Fed holds rates", "source": "CNBC", "summary": "", "url": "https://c/1",
                                  "image": "", "timestamp": 12}],
+                "stocks": {"NVDA": {"name": "NVIDIA", "price": 190.5, "change_percent": 3.2, "pe_ratio": 45.2}},
             }), encoding="utf-8")
             data = tmp / "data"
             save_record({"id": "2026-11-18-after-market", "date": "2026-11-18", "session": "after-market",
@@ -113,6 +124,9 @@ class BuildSiteTests(unittest.TestCase):
             nvda = next(g for g in payload["groups"] if g["symbols"] == ["NVDA"])
             self.assertEqual(nvda["size"], 2)
             self.assertEqual(nvda["image"], "https://cdn.example.com/n.jpg")
+            self.assertEqual(payload["stocks"], [{"name": "NVIDIA", "price": 190.5, "change_percent": 3.2,
+                                                  "pe_ratio": 45.2, "symbol": "NVDA"}])
+            self.assertEqual(payload["earnings"], [])
             self.assertTrue((out / "index.html").exists())
             self.assertTrue((out / "reports" / "index.json").exists())
 

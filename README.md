@@ -83,14 +83,19 @@ SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI"]
 
 ### 5. News Site (GitHub Pages)
 
-A static page with two tabs:
+A static page with three tabs:
 - **News**: all watchlist + market news of the last 24h in a 3-column card grid with
   thumbnails. Duplicate / >90% similar stories are grouped into one card (main headline +
-  "Similar coverage" list).
+  "Similar coverage" list). Ticker filters show each stock's daily move.
+- **Stocks**: the same figures as the Telegram *Company Info* post (price, change, today's
+  and 52-week range, open, previous close, P/E, market cap, beta, 10-day average volume)
+  plus upcoming earnings dates with EPS / revenue estimates (next 120 days, live from Finnhub).
 - **Daily report**: the AI report with the day's stock moves, plus past reports.
 
 It is rebuilt every 15 minutes by [.github/workflows/news-pages.yml](.github/workflows/news-pages.yml)
-(Finnhub only, no OpenAI calls).
+(Finnhub only, no OpenAI calls). Quotes are fetched every run; company profile, metrics and
+earnings change slowly and are cached for 12 hours (`.cache/market_meta.json`), so a normal
+run makes ~15 Finnhub calls, well under the free tier's 60/minute.
 
 **Thumbnails.** Finnhub often returns only a publisher logo (most Yahoo items), so the site
 builder reads the article's preview image (`og:image`) for stories without one
@@ -279,6 +284,7 @@ MarketAgent/
 │   ├── finnhub_client.py             # SYMBOLS + lazy Finnhub client
 │   ├── news_fetcher.py               # Company/market news fetch + relevance filter
 │   ├── news_grouping.py              # Duplicate / similar news grouping
+│   ├── market_data.py                # Quotes, metrics, earnings (Telegram + site)
 │   ├── build_news_site.py            # Builds site/ (index.html + news.json + reports)
 │   ├── thumbnails.py                 # og:image lookup for missing thumbnails (cached)
 │   ├── report_store.py               # Saves AI reports as JSON to the data branch

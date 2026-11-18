@@ -1,9 +1,10 @@
 """
 Build the static news site for GitHub Pages.
 
-Fetches company + market news from Finnhub (no OpenAI calls), groups duplicates,
-and writes <out>/news.json next to a copy of web/ (index.html etc.). With --data-dir
-(a checkout of the `data` branch) the stored AI reports are copied to <out>/reports/.
+Fetches company + market news, quotes, key metrics and upcoming earnings from Finnhub
+(no OpenAI calls), groups duplicate news, and writes <out>/news.json next to a copy of
+web/ (index.html etc.). With --data-dir (a checkout of the `data` branch) the stored AI
+reports are copied to <out>/reports/.
 
 Usage (from project root):
     python -m engine.build_news_site --out site
@@ -18,6 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from engine.finnhub_client import SYMBOLS
+from engine.market_data import fetch_stocks
 from engine.news_fetcher import fetch_company_news, fetch_market_news
 from engine.news_grouping import DEFAULT_THRESHOLD, group_news
 from engine.thumbnails import enrich_group_images
@@ -27,6 +29,7 @@ WEB_DIR = PROJECT_ROOT / "web"
 
 WINDOW_HOURS = 24
 THUMB_CACHE = PROJECT_ROOT / ".cache" / "thumbnails.json"
+META_CACHE = PROJECT_ROOT / ".cache" / "market_meta.json"
 
 
 def collect_live_news() -> list:
@@ -46,7 +49,11 @@ def collect_snapshot_news(path: Path) -> list:
     return items
 
 
-def build_payload(items: list, threshold: float = DEFAULT_THRESHOLD) -> dict:
+def collect_snapshot_stocks(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8")).get("stocks", {})
+
+
+def build_payload(items: list, threshold: float = DEFAULT_THRESHOLD, stocks: dict = None, earnings: list = None) -> dict:
     groups = group_news(items, threshold=threshold)
     for i, g in enumerate(groups):
         g["id"] = f"g{i}"
@@ -58,6 +65,9 @@ def build_payload(items: list, threshold: float = DEFAULT_THRESHOLD) -> dict:
         "total_articles": len(items),
         "total_groups": len(groups),
         "groups": groups,
+        # Same figures as the Telegram "Company Info" and earnings messages.
+        "stocks": [dict(info, symbol=sym) for sym, info in (stocks or {}).items()],
+        "earnings": earnings or [],
     }
 
 
@@ -78,7 +88,13 @@ def main(argv=None) -> int:
         print("❌ No news items collected; not building the site.")
         return 1
 
-    payload = build_payload(items, threshold=args.threshold)
+    if args.snapshot:
+        stocks, earnings = collect_snapshot_stocks(args.snapshot), []
+    else:
+        print("📈 Collecting stock data...")
+        stocks, earnings = fetch_stocks(SYMBOLS, cache_path=META_CACHE, with_earnings=True)
+
+    payload = build_payload(items, threshold=args.threshold, stocks=stocks, earnings=earnings)
 
     use_thumbs = args.thumbnails if args.thumbnails is not None else not args.snapshot
     if use_thumbs:

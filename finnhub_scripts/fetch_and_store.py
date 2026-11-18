@@ -10,38 +10,12 @@ import json
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from engine.finnhub_client import SYMBOLS, get_client
+from engine.finnhub_client import SYMBOLS
+from engine.market_data import fetch_stocks
 from engine.news_fetcher import fetch_company_news, fetch_market_news
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data", "snapshots")
-
-
-def fetch_quote(symbol):
-    """Fetch real-time quote data."""
-    try:
-        return get_client().quote(symbol)
-    except Exception as e:
-        print(f"⚠️ Error fetching quote for {symbol}: {e}")
-        return {}
-
-
-def fetch_company_profile(symbol):
-    """Fetch company profile (name, industry, market cap, etc.)."""
-    try:
-        return get_client().company_profile2(symbol=symbol)
-    except Exception as e:
-        print(f"⚠️ Error fetching profile for {symbol}: {e}")
-        return {}
-
-
-def fetch_basic_financials(symbol):
-    """Fetch key financial metrics."""
-    try:
-        return get_client().company_basic_financials(symbol, 'all').get('metric', {})
-    except Exception as e:
-        print(f"⚠️ Error fetching financials for {symbol}: {e}")
-        return {}
 
 
 def determine_market_session():
@@ -68,31 +42,9 @@ def build_snapshot():
         "market_news": []
     }
 
+    snapshot["stocks"], _ = fetch_stocks(SYMBOLS)
+
     for symbol in SYMBOLS:
-        print(f"  → Fetching {symbol}...")
-
-        quote = fetch_quote(symbol)
-        profile = fetch_company_profile(symbol)
-        financials = fetch_basic_financials(symbol)
-
-        snapshot["stocks"][symbol] = {
-            "price": quote.get("c", 0),
-            "change": quote.get("d", 0),
-            "change_percent": quote.get("dp", 0),
-            "high": quote.get("h", 0),
-            "low": quote.get("l", 0),
-            "open": quote.get("o", 0),
-            "previous_close": quote.get("pc", 0),
-            "name": profile.get("name", symbol),
-            "industry": profile.get("finnhubIndustry", "N/A"),
-            "market_cap": profile.get("marketCapitalization", 0),
-            "pe_ratio": financials.get("peBasicExclExtraTTM", None),
-            "52_week_high": financials.get("52WeekHigh", None),
-            "52_week_low": financials.get("52WeekLow", None),
-            "beta": financials.get("beta", None),
-            "volume": financials.get("10DayAverageTradingVolume", None),
-        }
-
         for item in fetch_company_news(symbol):
             snapshot["news"].append({
                 "symbol": symbol,
