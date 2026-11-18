@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Market News</title>
+<meta name="description" content="Top market and watchlist news from the last 24 hours, with duplicate stories grouped together.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232563eb'/><path d='M7 22l6-7 5 4 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #f0f2f5;
+    --border: #e2e5ea;
+    --text: #14171c;
+    --text-2: #4b5563;
+    --text-3: #6b7280;
+    --accent: #2563eb;
+    --accent-soft: #e8efff;
+    --warn-bg: #fff7e0;
+    --warn-text: #7a5300;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .06);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1116;
+      --surface: #161a21;
+      --surface-2: #1d222b;
+      --border: #2a303b;
+      --text: #e8eaee;
+      --text-2: #b3b9c4;
+      --text-3: #8a92a0;
+      --accent: #6b9bff;
+      --accent-soft: #1b2a4a;
+      --warn-bg: #3a2e10;
+      --warn-text: #f3d48a;
+      --shadow: none;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1116; --surface: #161a21; --surface-2: #1d222b; --border: #2a303b;
+    --text: #e8eaee; --text-2: #b3b9c4; --text-3: #8a92a0; --accent: #6b9bff;
+    --accent-soft: #1b2a4a; --warn-bg: #3a2e10; --warn-text: #f3d48a; --shadow: none;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; margin-bottom: 16px; }
+  h1 { font-size: 24px; line-height: 1.2; margin: 0; letter-spacing: -.01em; }
+  .status { color: var(--text-3); font-size: 13px; margin-top: 4px; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 20px; }
+  .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+  .seg button {
+    border: 0; background: transparent; color: var(--text-2); font: inherit; font-size: 13px; font-weight: 500;
+    padding: 5px 12px; border-radius: 6px; cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-2);
+    font: inherit; font-size: 12.5px; font-weight: 500; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .search {
+    flex: 1 1 200px; max-width: 320px; min-width: 0;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    font: inherit; font-size: 13.5px; padding: 6px 10px; border-radius: 8px;
+  }
+  button:focus-visible, .search:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .banner { background: var(--warn-bg); color: var(--warn-text); border-radius: 8px; padding: 8px 12px; font-size: 13.5px; margin-bottom: 16px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 16px; align-items: start; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; box-shadow: var(--shadow); min-width: 0;
+  }
+  .card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag {
+    font-size: 11.5px; font-weight: 600; letter-spacing: .02em; padding: 1px 7px; border-radius: 5px;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .tag.market { background: var(--surface-2); color: var(--text-2); }
+  .count { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+  .count strong { color: var(--text); font-weight: 600; }
+
+  .card h2 { font-size: 16.5px; line-height: 1.35; margin: 0 0 6px; font-weight: 650; overflow-wrap: anywhere; }
+  .card h2 a { text-decoration: none; }
+  .card h2 a:hover { text-decoration: underline; text-underline-offset: 2px; }
+  .meta { font-size: 12.5px; color: var(--text-3); }
+  .summary {
+    color: var(--text-2); font-size: 14px; margin: 8px 0 0;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+  }
+
+  .similar { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .similar-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); margin-bottom: 6px; }
+  .similar ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .similar li { font-size: 13.5px; line-height: 1.4; overflow-wrap: anywhere; }
+  .similar li a { text-decoration: none; color: var(--text); }
+  .similar li a:hover { text-decoration: underline; text-underline-offset: 2px; }
+  .similar li .meta { display: block; font-size: 12px; }
+  details.more summary { cursor: pointer; font-size: 13px; color: var(--accent); margin-top: 8px; list-style: none; }
+  details.more summary::-webkit-details-marker { display: none; }
+  details.more[open] summary { display: none; }
+  details.more ul { margin-top: 8px; }
+
+  .empty { text-align: center; color: var(--text-3); padding: 48px 16px; }
+  footer { color: var(--text-3); font-size: 12px; margin-top: 32px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Market News</h1>
+      <div class="status" id="status">Loading…</div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Sort stories">
+      <button type="button" data-sort="top" aria-pressed="true">Top</button>
+      <button type="button" data-sort="latest" aria-pressed="false">Latest</button>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filter by ticker"></div>
+    <input class="search" id="search" type="search" placeholder="Search headlines" aria-label="Search headlines">
+  </div>
+
+  <div id="banner"></div>
+  <main class="grid" id="grid" aria-live="polite"></main>
+  <footer id="footer"></footer>
+</div>
+
+<script>
+(() => {
+  const REFRESH_MS = 5 * 60 * 1000;
+  const STALE_MIN = 60;
+  const SIMILAR_VISIBLE = 3;
+
+  const store = {
+    get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  };
+
+  const state = { data: null, sort: store.get("mn.sort", "top"), filter: "all", query: "" };
+  const $ = (id) => document.getElementById(id);
+
+  function el(tag, attrs = {}, ...children) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v == null) continue;
+      if (k === "class") node.className = v;
+      else node.setAttribute(k, v);
+    }
+    for (const c of children) if (c != null) node.append(c);
+    return node;
+  }
+
+  const safeUrl = (u) => (/^https?:\/\//i.test(u || "") ? u : null);
+
+  function ago(ts) {
+    const s = Math.max(0, Date.now() / 1000 - ts);
+    if (s < 60) return "just now";
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+    return `${Math.floor(s / 86400)}d ago`;
+  }
+  const fullTime = (ts) => new Date(ts * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+  function link(item, cls) {
+    const url = safeUrl(item.url);
+    return url ? el("a", { href: url, target: "_blank", rel: "noopener noreferrer", class: cls }, item.headline)
+               : el("span", { class: cls }, item.headline);
+  }
+
+  function metaLine(item) {
+    return el("span", { class: "meta", title: item.timestamp ? fullTime(item.timestamp) : null },
+      [item.source || "Unknown", item.timestamp ? ago(item.timestamp) : null].filter(Boolean).join(" · "));
+  }
+
+  function similarItem(item) {
+    return el("li", {}, link(item), metaLine(item));
+  }
+
+  function card(g) {
+    const p = g.primary;
+    const tags = el("div", { class: "tags" });
+    if (g.symbols.length) g.symbols.forEach((s) => tags.append(el("span", { class: "tag" }, s)));
+    else tags.append(el("span", { class: "tag market" }, "Market"));
+
+    const top = el("div", { class: "card-top" }, tags);
+    if (g.size > 1) {
+      const n = g.sources.length;
+      top.append(el("span", { class: "count" }, el("strong", {}, String(g.size)), ` articles · ${n} source${n === 1 ? "" : "s"}`));
+    }
+
+    const c = el("article", { class: "card" }, top, el("h2", {}, link(p)), metaLine(p));
+    if (p.summary) c.append(el("p", { class: "summary" }, p.summary));
+
+    if (g.similar.length) {
+      const visible = g.similar.slice(0, SIMILAR_VISIBLE);
+      const hidden = g.similar.slice(SIMILAR_VISIBLE);
+      const box = el("div", { class: "similar" },
+        el("div", { class: "similar-label" }, `Similar coverage (${g.similar.length})`),
+        el("ul", {}, ...visible.map(similarItem)));
+      if (hidden.length) {
+        box.append(el("details", { class: "more" },
+          el("summary", {}, `Show ${hidden.length} more`),
+          el("ul", {}, ...hidden.map(similarItem))));
+      }
+      c.append(box);
+    }
+    return c;
+  }
+
+  function matches(g) {
+    if (state.filter === "market" && !g.categories.includes("market")) return false;
+    if (state.filter !== "all" && state.filter !== "market" && !g.symbols.includes(state.filter)) return false;
+    if (state.query) {
+      const q = state.query;
+      return [g.primary, ...g.similar].some((i) => i.headline.toLowerCase().includes(q) || (i.source || "").toLowerCase().includes(q));
+    }
+    return true;
+  }
+
+  function sorted(groups) {
+    const arr = groups.slice();
+    if (state.sort === "latest") arr.sort((a, b) => b.latest_ts - a.latest_ts);
+    else arr.sort((a, b) => (b.size - a.size) || (b.symbols.length - a.symbols.length) || (b.latest_ts - a.latest_ts));
+    return arr;
+  }
+
+  function renderChips() {
+    const d = state.data;
+    const hasMarket = d.groups.some((g) => g.categories.includes("market"));
+    const options = [["all", "All"], ...(hasMarket ? [["market", "Market"]] : []), ...d.symbols.map((s) => [s, s])];
+    $("chips").replaceChildren(...options.map(([v, label]) =>
+      el("button", { type: "button", class: "chip", "data-filter": v, "aria-pressed": String(state.filter === v) }, label)));
+  }
+
+  function renderStatus() {
+    const d = state.data;
+    if (!d) return;
+    const gen = new Date(d.generated_at);
+    const mins = (Date.now() - gen.getTime()) / 60000;
+    const dupes = d.total_articles - d.total_groups;
+    $("status").textContent =
+      `Updated ${ago(gen.getTime() / 1000)} · ${d.total_groups} stories from ${d.total_articles} articles` +
+      (dupes > 0 ? ` · ${dupes} duplicates grouped` : "");
+    $("status").title = gen.toLocaleString();
+    $("banner").replaceChildren(mins > STALE_MIN
+      ? el("div", { class: "banner" }, `This feed hasn't refreshed for ${Math.round(mins)} minutes. The scheduled update may be delayed.`)
+      : "");
+  }
+
+  function render() {
+    const d = state.data;
+    if (!d) return;
+    document.querySelectorAll("[data-sort]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.sort === state.sort)));
+    document.querySelectorAll("[data-filter]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter)));
+    const list = sorted(d.groups.filter(matches));
+    $("grid").replaceChildren(...(list.length ? list.map(card) : [el("div", { class: "empty" }, "No stories match this filter.")]));
+    $("footer").textContent = `Last ${d.window_hours}h · stories grouped when ≥ ${Math.round(d.threshold * 100)}% similar · data from Finnhub`;
+    renderStatus();
+  }
+
+  async function load() {
+    try {
+      const res = await fetch(`news.json?t=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const first = !state.data;
+      state.data = data;
+      if (!data.symbols.includes(state.filter) && !["all", "market"].includes(state.filter)) state.filter = "all";
+      renderChips();
+      render();
+      if (first && !data.groups.length) $("grid").replaceChildren(el("div", { class: "empty" }, "No news in the last 24 hours."));
+    } catch (err) {
+      if (!state.data) {
+        $("status").textContent = "Couldn't load news.";
+        $("grid").replaceChildren(el("div", { class: "empty" }, `Couldn't load news.json (${err.message}). Try again in a few minutes.`));
+      }
+    }
+  }
+
+  document.addEventListener("click", (e) => {
+    const sortBtn = e.target.closest("[data-sort]");
+    if (sortBtn) { state.sort = sortBtn.dataset.sort; store.set("mn.sort", state.sort); render(); return; }
+    const chip = e.target.closest("[data-filter]");
+    if (chip) { state.filter = chip.dataset.filter; render(); }
+  });
+  $("search").addEventListener("input", (e) => { state.query = e.target.value.trim().toLowerCase(); render(); });
+
+  load();
+  setInterval(load, REFRESH_MS);
+  setInterval(renderStatus, 60 * 1000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+})();
+</script>
+</body>
+</html>

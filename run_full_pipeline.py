@@ -84,7 +84,7 @@ def main():
     # Step 1: Fetch data
     if not run_step(
         "1/4 - Fetch Market Data",
-        "python finnhub_scripts/fetch_and_store.py",
+        "python -m finnhub_scripts.fetch_and_store",
         "Fetching quotes, news, and market data from Finnhub..."
     ):
         print("\n⚠️  Pipeline stopped due to data fetch failure")

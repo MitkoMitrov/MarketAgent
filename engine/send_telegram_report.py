@@ -141,19 +141,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# Helpers
-def load_latest_ai_report():
-    """Load the latest AI report text from reports/ directory."""
-    reports_dir = Path("reports")
-    reports = sorted(reports_dir.glob("ai_report-*.txt"), reverse=True)
-    if not reports:
-        return ("⚠️ No AI report found. Run run_ai_report first.", None)
-    latest = reports[0]
-    try:
-        with open(latest, "r", encoding="utf-8") as f:
-            content = f.read()
-        return (content, latest.name)
-    except Exception as e:
-        return (f"⚠️ Failed to read AI report: {e}", latest.name)
