@@ -84,16 +84,16 @@ SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI"]
 ### 5. News Site (GitHub Pages)
 
 A static page (http://mitko.mk/MarketAgent/) with these tabs:
-- **Watchlist** (first): one card per stock with the same figures as the Telegram *Company Info*
+- **News** (entry page): all watchlist + market news of the last 24h in a 3-column card grid with
+  thumbnails. Duplicate / >90% similar stories are grouped into one card (main headline +
+  "Similar coverage" list). Ticker filters show each stock's daily move.
+- **Watchlist**: one card per stock with the same figures as the Telegram *Company Info*
   post (price, change, today's and 52-week range, open, previous close, P/E, market cap, beta,
   10-day average volume), plus analyst consensus, EPS beat/miss for the last 4 quarters, insider
-  buying/selling (90 days) and upcoming earnings. **Details →** opens a company page with:
+  buying/selling (90 days); upcoming earnings below the cards. **Details →** opens a company page with:
   analyst ratings (4 months), earnings history, quarterly financials (from SEC filings), insider
   trades (Form 4) and monthly insider sentiment (MSPR), latest news, SEC filings, peers,
   lobbying spend, H-1B hiring and US government contracts.
-- **News**: all watchlist + market news of the last 24h in a 3-column card grid with
-  thumbnails. Duplicate / >90% similar stories are grouped into one card (main headline +
-  "Similar coverage" list). Ticker filters show each stock's daily move.
 - **US market**: market status (header badge), major indices and the 11 sectors (via ETFs),
   large companies reporting earnings this week, IPO calendar, market holidays.
 - **Economy**: Treasury bond, commodity, US dollar, crypto and volatility proxies (ETFs, since

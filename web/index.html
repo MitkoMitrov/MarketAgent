@@ -284,22 +284,24 @@
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Sections">
-    <a class="tab" role="tab" href="#watchlist" data-tab="watchlist" aria-selected="true">Watchlist</a>
-    <a class="tab" role="tab" href="#news" data-tab="news" aria-selected="false">News</a>
+    <a class="tab" role="tab" href="#news" data-tab="news" aria-selected="true">News</a>
+    <a class="tab" role="tab" href="#watchlist" data-tab="watchlist" aria-selected="false">Watchlist</a>
     <a class="tab" role="tab" href="#market" data-tab="market" aria-selected="false" id="tab-market" hidden>US market</a>
     <a class="tab" role="tab" href="#economy" data-tab="economy" aria-selected="false" id="tab-economy" hidden>Economy</a>
     <a class="tab" role="tab" href="#report" data-tab="report" aria-selected="false" id="tab-report" hidden>Daily report</a>
   </nav>
 
   <!-- Watchlist -->
-  <section id="view-watchlist" role="tabpanel">
+  <section id="view-watchlist" role="tabpanel" hidden>
     <p class="note" id="watchlist-note"></p>
-    <div class="block" id="earnings-wrap" hidden>
+    <div class="block">
+      <h2 class="section-title">Stocks</h2>
+      <div class="grid" id="stocks"><div class="empty">Loading…</div></div>
+    </div>
+    <div id="earnings-wrap" hidden>
       <h2 class="section-title">Upcoming earnings</h2>
       <div class="earnings" id="earnings"></div>
     </div>
-    <h2 class="section-title">Stocks</h2>
-    <div class="grid" id="stocks"><div class="empty">Loading…</div></div>
   </section>
 
   <!-- Company detail (part of Watchlist) -->
@@ -310,7 +312,7 @@
   </section>
 
   <!-- News -->
-  <section id="view-news" role="tabpanel" hidden>
+  <section id="view-news" role="tabpanel">
     <p class="note" id="news-note"></p>
     <div class="controls">
       <div class="seg" role="group" aria-label="Sort stories">
@@ -368,7 +370,7 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   };
   const state = {
-    news: null, market: null, companies: {}, route: { tab: "watchlist", symbol: null },
+    news: null, market: null, companies: {}, route: { tab: "news", symbol: null },
     sort: store.get("mn.sort", "top"), filter: "all", query: "", insiderAll: false,
     reports: [], reportId: null, reportCache: {},
   };
@@ -1042,13 +1044,13 @@
   }
 
   /* ---------- Routing (hash), loading, events ---------- */
-  const TABS = ["watchlist", "news", "market", "economy", "report"];
+  const TABS = ["news", "watchlist", "market", "economy", "report"];  // first = entry page
   function parseHash() {
     const h = decodeURIComponent(location.hash.replace(/^#/, ""));
     const m = h.match(/^company\/([A-Za-z0-9.\-]+)$/);
     if (m) return { tab: "company", symbol: m[1].toUpperCase() };
     if (h === "stocks") return { tab: "watchlist", symbol: null };
-    return { tab: TABS.includes(h) ? h : "watchlist", symbol: null };
+    return { tab: TABS.includes(h) ? h : TABS[0], symbol: null };
   }
   function applyRoute() {
     state.route = parseHash();
