@@ -7,7 +7,9 @@ name: News Site (GitHub Pages)
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/15 * * * *"  # every 15 minutes (GitHub may delay scheduled runs under load)
+    # Every 15 minutes, off the busy :00/:15/:30/:45 marks where GitHub delays or drops
+    # scheduled runs most often (free scheduled runs are best-effort).
+    - cron: "7,22,37,52 * * * *"
 
 permissions:
   contents: read
