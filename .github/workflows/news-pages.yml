@@ -49,8 +49,8 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .cache
-          key: thumbs-${{ github.run_id }}
-          restore-keys: thumbs-
+          key: thumbs-v2-${{ github.run_id }}
+          restore-keys: thumbs-v2-
 
       - name: Build site
         env:

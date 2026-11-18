@@ -85,6 +85,8 @@ def main(argv=None) -> int:
         stats = enrich_group_images(payload["groups"], THUMB_CACHE)
         print(f"🖼️  Thumbnails: {stats['missing']} stories without image, "
               f"{stats['fetched']} pages checked, {stats['filled']} filled")
+        for outcome, n in stats["outcomes"]:
+            print(f"     {n:4d} × {outcome}")
 
     out = Path(args.out)
     if out.exists():

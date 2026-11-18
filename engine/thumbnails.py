@@ -13,6 +13,7 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from html import unescape
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 
@@ -20,6 +21,8 @@ from engine.news_fetcher import clean_image_url
 
 USER_AGENT = "Mozilla/5.0 (compatible; NewsPreviewBot/1.0)"
 MAX_HTML_BYTES = 300_000      # og:image lives in <head>; don't download whole pages
+# Most links go through Finnhub's redirect (finnhub.io/api/news?id=...), which answers 429
+# when hit with many parallel requests; keep concurrency low (~4).
 TIMEOUT_S = 8
 CACHE_TTL_S = 3 * 24 * 3600   # news window is 24h; keep entries a bit longer
 GENERIC_IMAGE_MIN_USES = 3    # same image on 3+ different stories = publisher default picture
@@ -39,15 +42,21 @@ def extract_preview_image(html: str) -> str:
     return ""
 
 
-def fetch_preview_image(url: str, session: requests.Session) -> str:
+# Answers worth remembering. Anything else (429 rate limit, 5xx, timeouts) is retried next run.
+_DEFINITIVE_STATUSES = {200, 401, 403, 404, 410, 451}
+
+
+def fetch_preview_image(url: str, session: requests.Session) -> tuple:
+    """Return (image_url_or_empty, cacheable, outcome) where outcome is "<host> <status>"."""
     try:
         with session.get(url, timeout=TIMEOUT_S, stream=True, allow_redirects=True) as resp:
+            outcome = f"{urlparse(resp.url).hostname} {resp.status_code}"
             if resp.status_code != 200 or "html" not in resp.headers.get("content-type", "html"):
-                return ""
+                return "", resp.status_code in _DEFINITIVE_STATUSES, outcome
             raw = resp.raw.read(MAX_HTML_BYTES, decode_content=True)
-        return clean_image_url(extract_preview_image(raw.decode("utf-8", "ignore")))
-    except Exception:
-        return ""
+        return clean_image_url(extract_preview_image(raw.decode("utf-8", "ignore"))), True, outcome
+    except Exception as e:
+        return "", False, f"{urlparse(url).hostname} {type(e).__name__}"
 
 
 def _load_cache(path: Path) -> dict:
@@ -64,7 +73,7 @@ def _save_cache(path: Path, cache: dict) -> None:
     path.write_text(json.dumps(cache, separators=(",", ":")), encoding="utf-8")
 
 
-def enrich_group_images(groups: list, cache_path: Path, max_fetch: int = 200, workers: int = 12) -> dict:
+def enrich_group_images(groups: list, cache_path: Path, max_fetch: int = 150, workers: int = 4) -> dict:
     """Set group["image"] for groups that have none. Returns stats for logging."""
     cache = _load_cache(cache_path)
     missing = [g for g in groups if not g.get("image")]
@@ -79,14 +88,17 @@ def enrich_group_images(groups: list, cache_path: Path, max_fetch: int = 200, wo
                 to_fetch.append(url)
     to_fetch = to_fetch[:max_fetch]
 
+    outcomes = Counter()
     if to_fetch:
         with requests.Session() as session:
             session.headers["User-Agent"] = USER_AGENT
             with ThreadPoolExecutor(max_workers=workers) as pool:
                 results = list(pool.map(lambda u: fetch_preview_image(u, session), to_fetch))
         now = int(time.time())
-        for url, image in zip(to_fetch, results):
-            cache[url] = {"i": image, "t": now}  # "" is cached too, so failures aren't retried every run
+        for url, (image, cacheable, outcome) in zip(to_fetch, results):
+            outcomes[outcome + (" img" if image else "")] += 1
+            if cacheable:  # "" is cached too, so pages without an image aren't refetched every run
+                cache[url] = {"i": image, "t": now}
         _save_cache(cache_path, cache)
 
     found = {}
@@ -102,4 +114,5 @@ def enrich_group_images(groups: list, cache_path: Path, max_fetch: int = 200, wo
             g["image"] = img
             filled += 1
 
-    return {"missing": len(missing), "fetched": len(to_fetch), "filled": filled}
+    return {"missing": len(missing), "fetched": len(to_fetch), "filled": filled,
+            "outcomes": outcomes.most_common(8)}
