@@ -950,7 +950,9 @@
     const gen = state.news ? new Date(state.news.generated_at) : state.market ? new Date(state.market.generated_at) : null;
     if (!gen) return;
     const mins = (Date.now() - gen.getTime()) / 60000;
-    $("status").textContent = `Updated ${ago(gen.getTime() / 1000)} · refreshes every 15 minutes`;
+    const m = Math.max(0, Math.floor(mins)), h = Math.floor(m / 60);
+    const since = m < 1 ? "less than a minute ago" : m < 60 ? `${plural(m, "minute")} ago` : `${plural(h, "hour")} ago`;
+    $("status").textContent = `Last time updated ${since}`;
     $("status").title = gen.toLocaleString();
     $("banner").replaceChildren(mins > STALE_MIN
       ? el("div", { class: "banner" }, `This page hasn't refreshed for ${Math.round(mins)} minutes. The scheduled update may be delayed.`) : "");
