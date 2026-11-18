@@ -7,7 +7,7 @@ where category is "company" or "market", and image is "" when there is no real t
 """
 from datetime import datetime, timedelta, timezone
 
-from engine.finnhub_client import SYMBOLS, get_client
+from engine.finnhub_client import SYMBOLS, get_client, throttle
 
 _POSITIVE_KEYWORDS = {
     # Macro & indices
@@ -106,6 +106,7 @@ def fetch_company_news(symbol: str, hours: int = 24, limit=None) -> list:
     try:
         now = datetime.now(timezone.utc)
         cutoff = now - timedelta(hours=hours)
+        throttle()
         news = get_client().company_news(
             symbol,
             _from=cutoff.strftime("%Y-%m-%d"),
@@ -125,6 +126,7 @@ def fetch_market_news(hours: int = 24, symbols=SYMBOLS) -> list:
     """Fetch general market news for the past `hours`, keeping market-relevant items only."""
     try:
         cutoff = int((datetime.now(timezone.utc) - timedelta(hours=hours)).timestamp())
+        throttle()
         general_news = get_client().general_news('general', min_id=0)
         recent = [n for n in general_news if n.get('datetime', 0) >= cutoff]
         recent.sort(key=lambda x: x.get('datetime', 0), reverse=True)

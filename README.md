@@ -83,19 +83,29 @@ SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI"]
 
 ### 5. News Site (GitHub Pages)
 
-A static page with three tabs:
+A static page (http://mitko.mk/MarketAgent/) with these tabs:
+- **Watchlist** (first): one card per stock with the same figures as the Telegram *Company Info*
+  post (price, change, today's and 52-week range, open, previous close, P/E, market cap, beta,
+  10-day average volume), plus analyst consensus, EPS beat/miss for the last 4 quarters, insider
+  buying/selling (90 days) and upcoming earnings. **Details →** opens a company page with:
+  analyst ratings (4 months), earnings history, quarterly financials (from SEC filings), insider
+  trades (Form 4) and monthly insider sentiment (MSPR), latest news, SEC filings, peers,
+  lobbying spend, H-1B hiring and US government contracts.
 - **News**: all watchlist + market news of the last 24h in a 3-column card grid with
   thumbnails. Duplicate / >90% similar stories are grouped into one card (main headline +
   "Similar coverage" list). Ticker filters show each stock's daily move.
-- **Stocks**: the same figures as the Telegram *Company Info* post (price, change, today's
-  and 52-week range, open, previous close, P/E, market cap, beta, 10-day average volume)
-  plus upcoming earnings dates with EPS / revenue estimates (next 120 days, live from Finnhub).
+- **US market**: market status (header badge), major indices and the 11 sectors (via ETFs),
+  large companies reporting earnings this week, IPO calendar, market holidays.
+- **Economy**: Treasury bond, commodity, US dollar, crypto and volatility proxies (ETFs, since
+  the free plan has no direct yields/forex/commodities) and the FDA advisory committee calendar.
 - **Daily report**: the AI report with the day's stock moves, plus past reports.
 
 It is rebuilt every 15 minutes by [.github/workflows/news-pages.yml](.github/workflows/news-pages.yml)
-(Finnhub only, no OpenAI calls). Quotes are fetched every run; company profile, metrics and
-earnings change slowly and are cached for 12 hours (`.cache/market_meta.json`), so a normal
-run makes ~15 Finnhub calls, well under the free tier's 60/minute.
+(Finnhub only, no OpenAI calls). Quotes, market status and news are fetched every run (~45 calls);
+company details, calendars and metrics change slowly and are cached for 6–24 hours
+(`.cache/*.json`, persisted with `actions/cache`). All Finnhub calls go through a rate limiter
+(50/minute, the free tier allows 60), so a run that refreshes everything takes ~2 minutes and a
+normal run well under one. The site writes `news.json`, `market.json` and `companies/<SYM>.json`.
 
 **Thumbnails.** Finnhub often returns only a publisher logo (most Yahoo items), so the site
 builder reads the article's preview image (`og:image`) for stories without one
@@ -285,6 +295,9 @@ MarketAgent/
 │   ├── news_fetcher.py               # Company/market news fetch + relevance filter
 │   ├── news_grouping.py              # Duplicate / similar news grouping
 │   ├── market_data.py                # Quotes, metrics, earnings (Telegram + site)
+│   ├── company_data.py               # Insiders, analysts, financials, filings, lobbying, H-1B...
+│   ├── market_overview.py            # Indices, sectors, macro ETFs, IPOs, holidays, FDA calendar
+│   ├── slow_cache.py                 # TTL cache for slowly changing Finnhub data
 │   ├── build_news_site.py            # Builds site/ (index.html + news.json + reports)
 │   ├── thumbnails.py                 # og:image lookup for missing thumbnails (cached)
 │   ├── report_store.py               # Saves AI reports as JSON to the data branch

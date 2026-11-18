@@ -124,9 +124,12 @@ class BuildSiteTests(unittest.TestCase):
             nvda = next(g for g in payload["groups"] if g["symbols"] == ["NVDA"])
             self.assertEqual(nvda["size"], 2)
             self.assertEqual(nvda["image"], "https://cdn.example.com/n.jpg")
-            self.assertEqual(payload["stocks"], [{"name": "NVIDIA", "price": 190.5, "change_percent": 3.2,
-                                                  "pe_ratio": 45.2, "symbol": "NVDA"}])
-            self.assertEqual(payload["earnings"], [])
+            market = json.loads((out / "market.json").read_text(encoding="utf-8"))
+            stock = market["stocks"][0]
+            self.assertEqual((stock["symbol"], stock["price"], stock["pe_ratio"]), ("NVDA", 190.5, 45.2))
+            self.assertFalse(stock["has_details"])
+            self.assertEqual(market["earnings"], [])
+            self.assertNotIn("stocks", payload)
             self.assertTrue((out / "index.html").exists())
             self.assertTrue((out / "reports" / "index.json").exists())
 

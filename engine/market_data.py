@@ -14,7 +14,7 @@ import time
 from datetime import date, timedelta
 from pathlib import Path
 
-from engine.finnhub_client import get_client
+from engine.finnhub_client import get_client, throttle
 
 META_TTL_S = 12 * 3600
 EARNINGS_DAYS_AHEAD = 120      # far enough to include every stock's next quarterly report
@@ -25,6 +25,7 @@ _METRIC_KEYS = ("peBasicExclExtraTTM", "52WeekHigh", "52WeekLow", "beta", "10Day
 
 def _call(what: str, symbol: str, fn):
     try:
+        throttle()
         return fn() or {}
     except Exception as e:
         print(f"⚠️ Error fetching {what} for {symbol}: {e}")
