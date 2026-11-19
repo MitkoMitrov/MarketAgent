@@ -45,6 +45,12 @@ def kinds(client):
 
 
 class MarketDataTests(unittest.TestCase):
+    def test_null_quote_fields_become_zero(self):
+        # New listings (e.g. ANT on day one) have no previous close, so Finnhub sends nulls.
+        rec = market_data.stock_record("ANT", {"c": 101.5, "d": None, "dp": None, "pc": None}, {})
+        self.assertEqual((rec["price"], rec["change"], rec["change_percent"], rec["previous_close"]),
+                         (101.5, 0, 0, 0))
+
     def test_market_cap_is_in_millions(self):
         self.assertEqual(format_market_cap(1_501_178.4), "$1.50T")
         self.assertEqual(format_market_cap(40_757.2), "$40.76B")

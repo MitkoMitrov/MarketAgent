@@ -77,14 +77,14 @@ def _load_cache(path):
 def stock_record(symbol: str, quote: dict, meta: dict) -> dict:
     profile, metric = meta.get("profile", {}), meta.get("metric", {})
     return {
-        "price": quote.get("c", 0),
-        "change": quote.get("d", 0),
-        "change_percent": quote.get("dp", 0),
-        "high": quote.get("h", 0),
-        "low": quote.get("l", 0),
-        "open": quote.get("o", 0),
-        "previous_close": quote.get("pc", 0),
-        "quote_time": quote.get("t", 0),
+        "price": quote.get("c") or 0,
+        "change": quote.get("d") or 0,
+        "change_percent": quote.get("dp") or 0,
+        "high": quote.get("h") or 0,
+        "low": quote.get("l") or 0,
+        "open": quote.get("o") or 0,
+        "previous_close": quote.get("pc") or 0,
+        "quote_time": quote.get("t") or 0,
         "name": profile.get("name", symbol),
         "industry": profile.get("finnhubIndustry", "N/A"),
         "market_cap": profile.get("marketCapitalization", 0),

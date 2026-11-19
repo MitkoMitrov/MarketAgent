@@ -69,7 +69,7 @@ TELEGRAM_TOPIC_MARKET_NEWS=4
 Edit the `SYMBOLS` list in [engine/finnhub_client.py](engine/finnhub_client.py) (shared by the snapshot, the news site and Telegram):
 
 ```python
-SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI", "ATP"]
+SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI", "ANT"]
 ```
 
 ### 4. Create Telegram Group with Topics
@@ -384,7 +384,7 @@ assessment of trade tensions and increased competition in AI chips.
 Edit [engine/finnhub_client.py](engine/finnhub_client.py):
 
 ```python
-SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI", "ATP"]
+SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI", "ANT"]
 ```
 
 ### Change News Fetching Parameters
