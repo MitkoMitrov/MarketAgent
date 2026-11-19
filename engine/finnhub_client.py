@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Single source of truth for the watchlist (used by snapshots, earnings, news site).
-SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI"]
+SYMBOLS = ["QQQ", "TSLA", "AMD", "GOOG", "NVDA", "MSTR", "SMCI", "ATP"]
 
 API_BASE = "https://finnhub.io/api/v1"
 MAX_CALLS_PER_MIN = 50  # free tier allows 60/min; keep a margin
