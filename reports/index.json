@@ -1,6 +1,12 @@
 {
  "reports": [
   {
+   "id": "2026-11-24-after-market",
+   "date": "2026-11-24",
+   "session": "after-market",
+   "file": "reports/2026-11-24-after-market.json"
+  },
+  {
    "id": "2026-11-20-after-market",
    "date": "2026-11-20",
    "session": "after-market",
